@@ -14,6 +14,21 @@ export default function Pulse({ standings }) {
   const lead = rank === 1 ? gamesBack(me.wins, me.losses, sorted[1].wins, sorted[1].losses) : -parseFloat(me.gamesBack)
   const l10 = (me.records?.splitRecords || []).find((s) => s.type === 'lastTen')
 
+  // MLB hands us the Pythagorean (run-differential) expected record directly — to date and full-season pace.
+  const xRecs = me.records?.expectedRecords || []
+  const xToDate = xRecs.find((r) => r.type === 'xWinLoss')
+  const xSeason = xRecs.find((r) => r.type === 'xWinLossSeason')
+  const luck = xToDate ? me.wins - xToDate.wins : 0 // + means outplaying run differential, - means unlucky
+  const w = (n) => `${n} ${n === 1 ? 'win' : 'wins'}`
+  const note =
+    xToDate &&
+    (luck < 0
+      ? `Run differential points to a ${xToDate.wins}–${xToDate.losses} club — ${w(-luck)} better than their actual mark, so they've had a little bad luck.`
+      : luck > 0
+      ? `They're ${w(luck)} ahead of what run differential predicts (${xToDate.wins}–${xToDate.losses}) — outperforming the underlying numbers.`
+      : `Their record matches run differential to the win (${xToDate.wins}–${xToDate.losses}).`) +
+      (xSeason ? ` At this rate they're on a ${xSeason.wins}-win pace.` : '')
+
   const cell = (big, small) => (
     <div style={{ flex: '1 1 110px' }}>
       <div style={{ fontFamily: theme.serif, fontSize: 38, color: theme.ink, lineHeight: 1 }}>{big}</div>
@@ -22,12 +37,16 @@ export default function Pulse({ standings }) {
   )
 
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24 }}>
-      {cell(`${me.wins}\u2013${me.losses}`, 'Record')}
-      {cell(rank === 1 ? `+${lead}` : `${lead}`, rank === 1 ? 'Up in NL Central' : 'Games back')}
-      {cell(`${me.runDifferential > 0 ? '+' : ''}${me.runDifferential}`, 'Run differential')}
-      {cell(me.streak?.streakCode || '\u2014', 'Streak')}
-      {cell(l10 ? `${l10.wins}\u2013${l10.losses}` : '\u2014', 'Last 10')}
+    <div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24 }}>
+        {cell(`${me.wins}\u2013${me.losses}`, 'Record')}
+        {cell(rank === 1 ? `+${lead}` : `${lead}`, rank === 1 ? 'Up in NL Central' : 'Games back')}
+        {cell(`${me.runDifferential > 0 ? '+' : ''}${me.runDifferential}`, 'Run differential')}
+        {cell(me.streak?.streakCode || '\u2014', 'Streak')}
+        {cell(l10 ? `${l10.wins}\u2013${l10.losses}` : '\u2014', 'Last 10')}
+        {xToDate && cell(`${xToDate.wins}\u2013${xToDate.losses}`, 'Expected (xW\u2013L)')}
+      </div>
+      {note && <div style={{ fontFamily: theme.sans, fontSize: 13, color: theme.muted, marginTop: 18, lineHeight: 1.55, maxWidth: 620 }}>{note}</div>}
     </div>
   )
 }
