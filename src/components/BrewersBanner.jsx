@@ -1,5 +1,6 @@
 import { theme } from '../theme.js'
 import { USE_TEAM_LOGO, TEAM_LOGO, SPONSORS } from '../config.js'
+import Sponsor from './Sponsor.jsx'
 
 export default function BrewersBanner() {
   return (
@@ -15,10 +16,7 @@ export default function BrewersBanner() {
             <div style={{ fontFamily: theme.serif, fontStyle: 'italic', fontSize: 16, color: '#cdd6e3', marginTop: 4 }}>The shape of Milwaukee's season, updated live.</div>
           </div>
         </div>
-        <div style={{ fontFamily: theme.sans, fontSize: 11, color: '#cdd6e3', textAlign: 'right', border: '1px dashed rgba(255,255,255,0.4)', padding: '8px 12px', borderRadius: 4 }}>
-          <div style={{ letterSpacing: '0.12em', textTransform: 'uppercase', fontSize: 9 }}>Presented by</div>
-          <div style={{ fontFamily: theme.serif, fontSize: 15, color: '#fff', marginTop: 2 }}>{SPONSORS.header}</div>
-        </div>
+        <Sponsor sponsor={SPONSORS.header} variant="dark" />
       </div>
     </div>
   )

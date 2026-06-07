@@ -42,6 +42,25 @@ export async function fetchTeamSchedule() {
   return data.dates.flatMap((day) => day.games.map((g) => ({ date: day.date, game: g })))
 }
 
+// The single "featured" game for the hero: live now, else next upcoming, else last final.
+// Hydrates linescore so the hero can show inning/outs/score while a game is in progress.
+export async function fetchFeaturedGame() {
+  const t = new Date()
+  const back = new Date(t); back.setDate(t.getDate() - 1)
+  const fwd = new Date(t); fwd.setDate(t.getDate() + 7)
+  const fmt = (d) => d.toISOString().slice(0, 10)
+  const data = await getJSON(`/schedule?sportId=1&teamId=${TEAM_ID}&startDate=${fmt(back)}&endDate=${fmt(fwd)}&hydrate=probablePitcher,linescore,team`)
+  const games = data.dates.flatMap((day) => day.games)
+  if (!games.length) return null
+  // abstractGameState is 'Live' | 'Preview' | 'Final' — cleaner than detailedState for picking.
+  return (
+    games.find((g) => g.status.abstractGameState === 'Live') ||
+    games.find((g) => g.status.abstractGameState === 'Preview') ||
+    games.filter((g) => g.status.abstractGameState === 'Final').pop() ||
+    games[games.length - 1]
+  )
+}
+
 // Active roster with season stats hydrated in a single call.
 export async function fetchRosterStats() {
   const data = await getJSON(`/teams/${TEAM_ID}/roster?rosterType=active&hydrate=person(stats(type=season,season=${SEASON}))`)

@@ -15,16 +15,33 @@ export const TEAM_COLORS = { 158: '#12284b', 138: '#b0228c', 134: '#a89878', 112
 // A team mark on a sponsored surface can imply endorsement — set false for a colors-only header
 // if WPR/MLB sign-off isn't in hand.
 export const USE_TEAM_LOGO = true
-export const TEAM_LOGO = `https://www.mlbstatic.com/team-logos/${TEAM_ID}.svg`
+export const teamLogo = (teamId) => `https://www.mlbstatic.com/team-logos/${teamId}.svg`
+export const TEAM_LOGO = teamLogo(TEAM_ID)
 export const headshot = (personId) => `https://midfield.mlbstatic.com/v1/people/${personId}/spots/120`
 
 // WPR brand assets (the publication's own logo).
 export const WPR_LOGO = 'https://wausaupilotandreview.com/wp-content/uploads/2024/04/WausauPilotandReviewLogo.png'
 export const WPR_TAGLINE = 'Where Locals Look First For News'
 
-// Sellable sponsor surfaces. Swap the strings; the layout exposes one header slot plus two inline.
+// Sellable sponsor surfaces. One title slot (the navy banner) plus two inline section slots.
+// A slot is either a sponsor object or null (renders as an "available" upsell card).
+// Sponsor shape: { name, logo, url, tagline? } — logo optional (falls back to the name in serif).
 export const SPONSORS = {
-  header: 'Your Sponsor Here',
-  race: 'Sponsor B',
-  leaders: 'Sponsor C',
+  // Title sponsor — Ho-Chunk Gaming Wittenberg, current sponsor of WPR's Brewers content.
+  header: {
+    name: 'Ho-Chunk Gaming Wittenberg',
+    logo: 'https://wausaupilotandreview.com/wp-content/uploads/2025/07/HCG-W-Logo-1-336x115.jpg',
+    url: 'https://www.ho-chunkgaming.com/wittenberg/',
+    tagline: '800+ slots · Hotel · Dining — Wittenberg, WI',
+  },
+  // Open inventory. Set to a sponsor object (same shape as above) to fill the slot.
+  race: null,
+  leaders: null,
 }
+
+// Where to send sponsorship inquiries (shown on empty slots — the upsell).
+export const SPONSOR_INQUIRY = 'sales@wausaupilotandreview.com'
+
+// Shown in the footer when a gaming brand is the title sponsor. Editable; set to '' to hide.
+export const SPONSOR_DISCLAIMER =
+  'Must be 21+. If you or someone you know has a gambling problem, call 1-800-GAMBLER.'
