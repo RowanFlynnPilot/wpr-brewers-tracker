@@ -45,6 +45,7 @@ export default function Pulse({ standings }) {
         {cell(me.streak?.streakCode || '\u2014', 'Streak')}
         {cell(l10 ? `${l10.wins}\u2013${l10.losses}` : '\u2014', 'Last 10')}
         {xToDate && cell(`${xToDate.wins}\u2013${xToDate.losses}`, 'Expected (xW\u2013L)')}
+        {rank === 1 && me.magicNumber && me.magicNumber !== '-' && cell(`${me.magicNumber}`, 'Magic number')}
       </div>
       {note && <div style={{ fontFamily: theme.sans, fontSize: 13, color: theme.muted, marginTop: 18, lineHeight: 1.55, maxWidth: 620 }}>{note}</div>}
     </div>

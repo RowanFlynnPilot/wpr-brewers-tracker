@@ -5,7 +5,7 @@ import { fetchPitcherSeason } from '../api.js'
 
 // Probable-pitcher line: headshot + name + season stat line (ERA · W-L · K).
 // Self-contained — fetches its own season stats; the stat line just doesn't render if unavailable.
-export default function PitcherLine({ personId, fullName, label = 'Prob', size = 26 }) {
+export default function PitcherLine({ personId, fullName, label = 'Prob', size = 26, center = false }) {
   const [stat, setStat] = useState(null)
 
   useEffect(() => {
@@ -18,7 +18,7 @@ export default function PitcherLine({ personId, fullName, label = 'Prob', size =
   const line = stat ? `${stat.era} ERA · ${stat.wins}-${stat.losses} · ${stat.strikeOuts} K` : null
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 5 }}>
+    <div style={{ display: 'flex', flexDirection: center ? 'column' : 'row', alignItems: 'center', gap: center ? 4 : 8, marginTop: 5, textAlign: center ? 'center' : 'left' }}>
       {personId && (
         <img
           src={headshot(personId)}

@@ -31,7 +31,7 @@ export const SPONSORS = {
   header: {
     name: 'Ho-Chunk Gaming Wittenberg',
     logo: 'https://wausaupilotandreview.com/wp-content/uploads/2025/07/HCG-W-Logo-1-336x115.jpg',
-    url: 'https://www.ho-chunkgaming.com/wittenberg/',
+    url: 'https://www.ho-chunkgaming.com/wittenberg/?utm_source=wausaupilotandreview&utm_medium=widget&utm_campaign=brewers_tracker',
     tagline: '800+ slots · Hotel · Dining — Wittenberg, WI',
   },
   // Open inventory. Set to a sponsor object (same shape as above) to fill the slot.
