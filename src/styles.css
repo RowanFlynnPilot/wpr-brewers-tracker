@@ -1,0 +1,6 @@
+:root { --ink:#1a1a1a; }
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: #fff; color: var(--ink); }
+table { border-collapse: collapse; width: 100%; }
+img { border: 0; }
