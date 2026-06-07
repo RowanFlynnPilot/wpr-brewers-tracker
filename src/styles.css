@@ -4,3 +4,17 @@ html, body { margin: 0; }
 body { background: #fff; color: var(--ink); }
 table { border-collapse: collapse; width: 100%; }
 img { border: 0; }
+
+/* Loading skeletons — shimmer in the brand's warm neutrals. */
+.skeleton {
+  background: linear-gradient(90deg, #efe9dc 25%, #f7f4ec 37%, #efe9dc 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
+}
+@keyframes shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: 0 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; }
+}

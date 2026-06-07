@@ -4,15 +4,19 @@ import { Loading } from './Status.jsx'
 
 const gamesBack = (lw, ll, w, l) => ((lw - w) + (l - ll)) / 2
 
-// Receives shared standings from App (single fetch feeds Pulse + Standings).
-export default function Pulse({ standings }) {
-  if (!standings) return <Loading label="Reading the standings" />
+// Receives shared standings from App (single fetch feeds Pulse + Standings); lastGame is derived
+// from the division schedules in App.
+export default function Pulse({ standings, lastGame }) {
+  if (!standings) return <Loading />
 
   const me = standings.find((t) => t.team.id === TEAM_ID)
   const sorted = [...standings].sort((a, b) => parseFloat(b.winningPercentage) - parseFloat(a.winningPercentage))
   const rank = sorted.findIndex((t) => t.team.id === TEAM_ID) + 1
   const lead = rank === 1 ? gamesBack(me.wins, me.losses, sorted[1].wins, sorted[1].losses) : -parseFloat(me.gamesBack)
-  const l10 = (me.records?.splitRecords || []).find((s) => s.type === 'lastTen')
+  const split = (type) => (me.records?.splitRecords || []).find((s) => s.type === type)
+  const l10 = split('lastTen')
+  const home = split('home')
+  const away = split('away')
 
   // MLB hands us the Pythagorean (run-differential) expected record directly — to date and full-season pace.
   const xRecs = me.records?.expectedRecords || []
@@ -44,10 +48,18 @@ export default function Pulse({ standings }) {
         {cell(`${me.runDifferential > 0 ? '+' : ''}${me.runDifferential}`, 'Run differential')}
         {cell(me.streak?.streakCode || '\u2014', 'Streak')}
         {cell(l10 ? `${l10.wins}\u2013${l10.losses}` : '\u2014', 'Last 10')}
+        {home && cell(`${home.wins}\u2013${home.losses}`, 'Home')}
+        {away && cell(`${away.wins}\u2013${away.losses}`, 'Away')}
         {xToDate && cell(`${xToDate.wins}\u2013${xToDate.losses}`, 'Expected (xW\u2013L)')}
         {rank === 1 && me.magicNumber && me.magicNumber !== '-' && cell(`${me.magicNumber}`, 'Magic number')}
       </div>
-      {note && <div style={{ fontFamily: theme.sans, fontSize: 13, color: theme.muted, marginTop: 18, lineHeight: 1.55, maxWidth: 620 }}>{note}</div>}
+      {lastGame && (
+        <div style={{ fontFamily: theme.sans, fontSize: 13, color: theme.muted, marginTop: 18 }}>
+          <span style={{ fontWeight: 700, color: lastGame.won ? theme.navy : theme.red }}>{lastGame.won ? 'W' : 'L'}</span>
+          {' '}Latest: {lastGame.won ? 'beat' : 'lost to'} {lastGame.oppName} {lastGame.me}{'\u2013'}{lastGame.opp} {lastGame.home ? 'at home' : 'on the road'}.
+        </div>
+      )}
+      {note && <div style={{ fontFamily: theme.sans, fontSize: 13, color: theme.muted, marginTop: 10, lineHeight: 1.55, maxWidth: 620 }}>{note}</div>}
     </div>
   )
 }

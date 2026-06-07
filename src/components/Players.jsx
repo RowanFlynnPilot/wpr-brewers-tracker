@@ -67,7 +67,7 @@ export default function Players() {
   }, [])
 
   if (error) return <ErrorState />
-  if (!leaders) return <Loading label="Loading player stats" />
+  if (!leaders) return <Loading />
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 36 }}>

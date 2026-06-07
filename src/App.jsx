@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, lazy, Suspense } from 'react'
 import { theme } from './theme.js'
 import { SPONSORS, SPONSOR_DISCLAIMER } from './config.js'
-import { fetchDivisionStandings } from './api.js'
+import { fetchDivisionStandings, fetchDivisionSchedules } from './api.js'
+import { recentForm, lastFinalGame } from './games.js'
 import { initAnalytics } from './analytics.js'
 import Masthead from './components/Masthead.jsx'
 import BrewersBanner from './components/BrewersBanner.jsx'
@@ -9,18 +10,26 @@ import GameHero from './components/GameHero.jsx'
 import Section from './components/Section.jsx'
 import Pulse from './components/Pulse.jsx'
 import Standings from './components/Standings.jsx'
-import Race from './components/Race.jsx'
 import Schedule from './components/Schedule.jsx'
 import Players from './components/Players.jsx'
+import { Loading } from './components/Status.jsx'
+
+// Recharts is the heaviest dependency — load the race chart in its own chunk.
+const Race = lazy(() => import('./components/Race.jsx'))
 
 export default function App() {
-  // Standings are fetched once and shared by Pulse + Standings; other modules fetch their own feeds.
+  // Standings + division schedules are fetched once and shared; other modules fetch their own feeds.
   const [standings, setStandings] = useState(null)
+  const [schedules, setSchedules] = useState(null)
 
   useEffect(() => {
     initAnalytics()
     fetchDivisionStandings().then(setStandings).catch(() => setStandings(null))
+    fetchDivisionSchedules().then(setSchedules).catch(() => setSchedules(null))
   }, [])
+
+  const form = schedules ? recentForm(schedules) : null
+  const lastGame = schedules ? lastFinalGame(schedules) : null
 
   return (
     <div style={{ background: theme.paper, color: theme.ink, minHeight: '100vh' }}>
@@ -28,9 +37,11 @@ export default function App() {
       <BrewersBanner />
       <div style={{ maxWidth: 880, margin: '0 auto', padding: '0 20px' }}>
         <GameHero />
-        <Section kicker="Season pulse" title="Where things stand"><Pulse standings={standings} /></Section>
-        <Section kicker="NL Central" title="The standings"><Standings standings={standings} /></Section>
-        <Section kicker="The division race" title="NL Central, day by day" sponsor={SPONSORS.race} slot="race"><Race /></Section>
+        <Section kicker="Season pulse" title="Where things stand"><Pulse standings={standings} lastGame={lastGame} /></Section>
+        <Section kicker="NL Central" title="The standings"><Standings standings={standings} form={form} /></Section>
+        <Section kicker="The division race" title="NL Central, day by day" sponsor={SPONSORS.race} slot="race">
+          <Suspense fallback={<Loading block />}><Race schedules={schedules} /></Suspense>
+        </Section>
         <Section kicker="Recent & upcoming" title="The schedule"><Schedule /></Section>
         <Section kicker="At the plate & on the mound" title="Team leaders" sponsor={SPONSORS.leaders} slot="leaders"><Players /></Section>
 

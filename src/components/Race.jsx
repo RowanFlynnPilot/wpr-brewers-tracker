@@ -1,9 +1,7 @@
-import { useEffect, useState } from 'react'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from 'recharts'
 import { theme } from '../theme.js'
 import { DIVISION, TEAM_COLORS, TEAM_ID } from '../config.js'
-import { fetchDivisionSchedules } from '../api.js'
-import { Loading, ErrorState } from './Status.jsx'
+import { Loading } from './Status.jsx'
 
 const gamesBack = (lw, ll, w, l) => ((lw - w) + (l - ll)) / 2
 
@@ -47,16 +45,9 @@ function buildSeries(teams) {
   }).filter((_, i) => i % 2 === 0) // thin to ~every other day for legibility
 }
 
-export default function Race() {
-  const [data, setData] = useState(null)
-  const [error, setError] = useState(false)
-
-  useEffect(() => {
-    fetchDivisionSchedules().then((teams) => setData(buildSeries(teams))).catch(() => setError(true))
-  }, [])
-
-  if (error) return <ErrorState />
-  if (!data) return <Loading label="Walking the season day by day" />
+export default function Race({ schedules }) {
+  if (!schedules) return <Loading block />
+  const data = buildSeries(schedules)
 
   return (
     <>

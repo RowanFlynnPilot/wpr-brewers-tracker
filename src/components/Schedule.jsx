@@ -15,7 +15,7 @@ export default function Schedule() {
   }, [])
 
   if (error) return <ErrorState />
-  if (!games) return <Loading label="Pulling the schedule" />
+  if (!games) return <Loading />
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: 10 }}>
