@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback } from 'react'
 import { theme } from '../theme.js'
-import { TEAM_ID, SPONSORS, teamLogo } from '../config.js'
+import { TEAM_ID, SPONSORS } from '../config.js'
 import { fetchFeaturedGame } from '../api.js'
 import Sponsor from './Sponsor.jsx'
+import TeamLogo from './TeamLogo.jsx'
 
 const REFRESH_MS = 45000 // API caches 60s; poll a touch faster so a live score never feels stale.
 
@@ -43,14 +44,9 @@ export default function GameHero() {
   const inning = ls && live ? `${ls.inningHalf || ''} ${ls.currentInning ?? ''}`.trim() : ''
   const won = final && me.score > opp.score
 
-  const Mark = ({ id }) => (
-    <img src={teamLogo(id)} alt="" width={40} height={40} style={{ objectFit: 'contain' }}
-      onError={(e) => { e.currentTarget.style.display = 'none' }} />
-  )
-
   const Side = ({ team, name, score, prob }) => (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-      <Mark id={team.team.id} />
+      <TeamLogo id={team.team.id} size={40} />
       <div style={{ minWidth: 0 }}>
         <div style={{ fontFamily: theme.serif, fontSize: 20, color: theme.ink, lineHeight: 1.1 }}>{name}</div>
         {(live || final) ? (

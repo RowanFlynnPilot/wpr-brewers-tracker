@@ -1,6 +1,7 @@
 import { theme } from '../theme.js'
 import { TEAM_ID } from '../config.js'
 import { Loading } from './Status.jsx'
+import TeamLogo from './TeamLogo.jsx'
 
 const th = { fontFamily: theme.sans, fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: theme.muted, textAlign: 'right', padding: '8px 10px', fontWeight: 700 }
 const td = { fontFamily: theme.sans, fontSize: 14, color: theme.ink, textAlign: 'right', padding: '10px', borderTop: `1px solid ${theme.rule}` }
@@ -26,7 +27,12 @@ export default function Standings({ standings }) {
             const rd = t.runDifferential
             return (
               <tr key={t.team.id} style={{ background: me ? theme.wash : 'transparent' }}>
-                <td style={{ ...td, textAlign: 'left', fontFamily: theme.serif, fontSize: 16, fontWeight: me ? 700 : 400, color: me ? theme.navy : theme.ink }}>{t.team.name}</td>
+                <td style={{ ...td, textAlign: 'left' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, fontFamily: theme.serif, fontSize: 16, fontWeight: me ? 700 : 400, color: me ? theme.navy : theme.ink }}>
+                    <TeamLogo id={t.team.id} size={22} />
+                    {t.team.name}
+                  </span>
+                </td>
                 <td style={td}>{t.wins}</td>
                 <td style={td}>{t.losses}</td>
                 <td style={td}>{t.winningPercentage}</td>
