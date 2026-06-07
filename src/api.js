@@ -21,6 +21,20 @@ export async function fetchDivisionStandings() {
   return record.teamRecords
 }
 
+// Brewers' rank across the National League: runs scored (most first) and runs allowed (fewest first).
+export async function fetchLeagueRanks() {
+  const data = await getJSON(`/standings?leagueId=${LEAGUE_ID}&season=${SEASON}`)
+  const teams = data.records.flatMap((r) => r.teamRecords)
+  const rankBy = (cmp) => {
+    const sorted = [...teams].sort(cmp)
+    return { rank: sorted.findIndex((t) => t.team.id === TEAM_ID) + 1, of: teams.length }
+  }
+  return {
+    runsScored: rankBy((a, b) => b.runsScored - a.runsScored),
+    runsAllowed: rankBy((a, b) => a.runsAllowed - b.runsAllowed),
+  }
+}
+
 // Season schedules for every division team — used to derive games-back over time client-side.
 export async function fetchDivisionSchedules() {
   const ids = Object.keys(DIVISION)

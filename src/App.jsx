@@ -1,7 +1,7 @@
-import { useEffect, useState, lazy, Suspense } from 'react'
+import { useEffect, useState, useCallback, lazy, Suspense } from 'react'
 import { theme } from './theme.js'
 import { SPONSORS, SPONSOR_DISCLAIMER } from './config.js'
-import { fetchDivisionStandings, fetchDivisionSchedules } from './api.js'
+import { fetchDivisionStandings, fetchDivisionSchedules, fetchLeagueRanks } from './api.js'
 import { recentForm, lastFinalGame } from './games.js'
 import { initAnalytics } from './analytics.js'
 import Masthead from './components/Masthead.jsx'
@@ -17,16 +17,48 @@ import { Loading } from './components/Status.jsx'
 // Recharts is the heaviest dependency — load the race chart in its own chunk.
 const Race = lazy(() => import('./components/Race.jsx'))
 
+// Subtle "Updated Xm ago" stamp; re-renders every 30s so the relative time stays current.
+function UpdatedStamp({ at }) {
+  const [, setTick] = useState(0)
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 30000)
+    return () => clearInterval(id)
+  }, [])
+  if (!at) return null
+  const mins = Math.floor((Date.now() - at) / 60000)
+  const label = mins < 1 ? 'just now' : mins === 1 ? '1 min ago' : `${mins} min ago`
+  return (
+    <div style={{ textAlign: 'right', fontFamily: theme.sans, fontSize: 11, color: theme.muted, padding: '12px 0 0' }}>
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+        <span style={{ width: 6, height: 6, borderRadius: '50%', background: theme.gold }} /> Updated {label} · refreshes live
+      </span>
+    </div>
+  )
+}
+
 export default function App() {
-  // Standings + division schedules are fetched once and shared; other modules fetch their own feeds.
+  // Standings + division schedules + NL ranks are fetched together and shared; other modules fetch their own feeds.
   const [standings, setStandings] = useState(null)
   const [schedules, setSchedules] = useState(null)
+  const [ranks, setRanks] = useState(null)
+  const [updatedAt, setUpdatedAt] = useState(null)
+
+  // Refresh on a gentle interval (and on tab focus) so the whole page — not just the hero — stays live.
+  // On a refresh error we keep the prior data rather than blanking the page.
+  const load = useCallback(() => {
+    fetchDivisionStandings().then((s) => { setStandings(s); setUpdatedAt(Date.now()) }).catch(() => {})
+    fetchDivisionSchedules().then(setSchedules).catch(() => {})
+    fetchLeagueRanks().then(setRanks).catch(() => {})
+  }, [])
 
   useEffect(() => {
     initAnalytics()
-    fetchDivisionStandings().then(setStandings).catch(() => setStandings(null))
-    fetchDivisionSchedules().then(setSchedules).catch(() => setSchedules(null))
-  }, [])
+    load()
+    const id = setInterval(() => { if (!document.hidden) load() }, 120000)
+    const onVisible = () => { if (!document.hidden) load() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => { clearInterval(id); document.removeEventListener('visibilitychange', onVisible) }
+  }, [load])
 
   const form = schedules ? recentForm(schedules) : null
   const lastGame = schedules ? lastFinalGame(schedules) : null
@@ -36,8 +68,9 @@ export default function App() {
       <Masthead />
       <BrewersBanner />
       <div style={{ maxWidth: 880, margin: '0 auto', padding: '0 20px' }}>
+        <UpdatedStamp at={updatedAt} />
         <GameHero />
-        <Section kicker="Season pulse" title="Where things stand"><Pulse standings={standings} lastGame={lastGame} /></Section>
+        <Section kicker="Season pulse" title="Where things stand"><Pulse standings={standings} lastGame={lastGame} ranks={ranks} /></Section>
         <Section kicker="NL Central" title="The standings"><Standings standings={standings} form={form} /></Section>
         <Section kicker="The division race" title="NL Central, day by day" sponsor={SPONSORS.race} slot="race">
           <Suspense fallback={<Loading block />}><Race schedules={schedules} /></Suspense>

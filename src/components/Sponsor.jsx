@@ -25,7 +25,7 @@ export default function Sponsor({ sponsor, variant = 'light', compact = false, s
   if (compact && sponsor) {
     const Tag = sponsor.url ? 'a' : 'span'
     return (
-      <Tag {...linkProps} style={{ textDecoration: 'none', fontFamily: theme.sans, fontSize: 11, color: labelColor }}>
+      <Tag {...linkProps} className={sponsor.url ? 'link-hover' : undefined} style={{ textDecoration: 'none', fontFamily: theme.sans, fontSize: 11, color: labelColor }}>
         <span style={{ letterSpacing: '0.12em', textTransform: 'uppercase' }}>Presented by </span>
         <span style={{ fontFamily: theme.serif, fontSize: 13, color: nameColor }}>{sponsor.name}</span>
       </Tag>
@@ -56,6 +56,7 @@ export default function Sponsor({ sponsor, variant = 'light', compact = false, s
   return (
     <Box
       {...linkProps}
+      className={sponsor.url ? 'link-hover' : undefined}
       style={{
         display: 'inline-block', textAlign: 'right', textDecoration: 'none',
         border: `1px solid ${border}`, borderRadius: 4, padding: '8px 12px', maxWidth: 240,

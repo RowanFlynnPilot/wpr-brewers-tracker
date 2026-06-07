@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { theme } from '../theme.js'
 import { TEAM_ID, SPONSORS } from '../config.js'
 import { fetchFeaturedGame } from '../api.js'
+import { useIsNarrow } from '../useIsNarrow.js'
 import Sponsor from './Sponsor.jsx'
 import TeamLogo from './TeamLogo.jsx'
 import PitcherLine from './PitcherLine.jsx'
@@ -29,12 +30,20 @@ function Bases({ first, second, third }) {
 export default function GameHero() {
   const [game, setGame] = useState(null)
   const [error, setError] = useState(false)
+  const [now, setNow] = useState(Date.now())
+  const narrow = useIsNarrow()
 
   const load = useCallback(() => {
     fetchFeaturedGame().then((g) => { setGame(g); setError(false) }).catch(() => setError(true))
   }, [])
 
   useEffect(() => { load() }, [load])
+
+  // Minute tick drives the pre-game countdown.
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 60000)
+    return () => clearInterval(id)
+  }, [])
 
   const live = game?.status?.abstractGameState === 'Live'
   useEffect(() => {
@@ -64,33 +73,48 @@ export default function GameHero() {
     ? new Date(game.gameDate).toLocaleString('en-US', { weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
     : null
 
+  // Pre-game countdown when first pitch is within the next 12 hours.
+  const msToStart = !live && !final ? new Date(game.gameDate).getTime() - now : null
+  let countdown = null
+  if (msToStart != null && msToStart > 0 && msToStart < 12 * 3600 * 1000) {
+    const h = Math.floor(msToStart / 3600000)
+    const m = Math.floor((msToStart % 3600000) / 60000)
+    countdown = h > 0 ? `Starts in ${h}h ${m}m` : `Starts in ${m}m`
+  }
+
+  // Responsive sizing for phones / narrow iframes.
+  const logoSize = narrow ? 54 : 72
+  const nameSize = narrow ? 20 : 24
+  const scoreSize = narrow ? 40 : 52
+  const matchupGap = narrow ? 12 : 22
+
   const TeamBlock = ({ team, name }) => (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, flex: '0 1 190px' }}>
-      <TeamLogo id={team.team.id} size={72} />
-      <div style={{ fontFamily: theme.serif, fontSize: 24, color: theme.ink, lineHeight: 1.05 }}>{name}</div>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, flex: narrow ? '0 1 120px' : '0 1 190px' }}>
+      <TeamLogo id={team.team.id} size={logoSize} />
+      <div style={{ fontFamily: theme.serif, fontSize: nameSize, color: theme.ink, lineHeight: 1.05 }}>{name}</div>
     </div>
   )
 
   return (
-    <div style={{ marginTop: 28, border: `1px solid ${theme.rule}`, borderTop: `4px solid ${theme.gold}`, borderRadius: 10, background: theme.wash, padding: '30px 24px 26px', textAlign: 'center' }}>
+    <div style={{ marginTop: 22, border: `1px solid ${theme.rule}`, borderTop: `4px solid ${theme.gold}`, borderRadius: 10, background: theme.wash, padding: narrow ? '24px 14px 22px' : '30px 24px 26px', textAlign: 'center' }}>
       {/* Header */}
       <div style={{ fontFamily: theme.sans, fontSize: 12, letterSpacing: '0.2em', textTransform: 'uppercase', color: live ? theme.gold : theme.muted, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-        {live && <span style={{ width: 9, height: 9, borderRadius: '50%', background: theme.gold }} />}
+        {live && <span className="live-dot" style={{ width: 9, height: 9, borderRadius: '50%', background: theme.gold }} />}
         {kicker}{inning ? ` · ${inning}` : ''}
       </div>
-      {(when || series) && (
+      {(when || series || countdown) && (
         <div style={{ fontFamily: theme.sans, fontSize: 12.5, color: theme.muted, marginTop: 6 }}>
-          {[when, series].filter(Boolean).join(' · ')}
+          {[when, series, countdown].filter(Boolean).join(' · ')}
         </div>
       )}
 
       {/* Matchup */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 22, flexWrap: 'wrap', margin: '22px 0 18px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: matchupGap, flexWrap: 'wrap', margin: '22px 0 18px' }}>
         <TeamBlock team={me} name="Brewers" />
         {showScore ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontFamily: theme.serif, fontSize: 52, lineHeight: 1 }}>
+          <div aria-live="polite" style={{ display: 'flex', alignItems: 'center', gap: 14, fontFamily: theme.serif, fontSize: scoreSize, lineHeight: 1 }}>
             <span style={{ color: won ? theme.navy : theme.ink, fontWeight: won ? 700 : 400 }}>{me.score}</span>
-            <span style={{ fontSize: 26, color: theme.muted }}>–</span>
+            <span style={{ fontSize: scoreSize * 0.5, color: theme.muted }}>–</span>
             <span style={{ color: theme.ink }}>{opp.score}</span>
           </div>
         ) : (
@@ -101,7 +125,7 @@ export default function GameHero() {
 
       {/* Live situation */}
       {live && (
-        <div style={{ margin: '0 0 18px' }}>
+        <div aria-live="polite" style={{ margin: '0 0 18px' }}>
           <Bases first={!!ls.offense?.first} second={!!ls.offense?.second} third={!!ls.offense?.third} />
           <div style={{ fontFamily: theme.sans, fontSize: 13, color: theme.ink, marginTop: 8 }}>
             {ls.balls ?? 0}-{ls.strikes ?? 0}, {ls.outs ?? 0} out{ls.outs === 1 ? '' : 's'}
@@ -116,7 +140,7 @@ export default function GameHero() {
 
       {/* Probable pitchers (upcoming games) */}
       {!live && !final && (me.probablePitcher || opp.probablePitcher) && (
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 40, flexWrap: 'wrap', margin: '2px 0 20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: narrow ? 24 : 40, flexWrap: 'wrap', margin: '2px 0 20px' }}>
           {[me, opp].map((side, i) => side.probablePitcher && (
             <PitcherLine key={i} personId={side.probablePitcher.id} fullName={side.probablePitcher.fullName} size={34} center />
           ))}

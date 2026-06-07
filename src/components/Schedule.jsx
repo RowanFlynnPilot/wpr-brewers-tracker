@@ -31,7 +31,7 @@ export default function Schedule() {
         const won = final && myScore > oppScore
         const label = new Date(date + 'T12:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
         return (
-          <div key={i} style={{ border: `1px solid ${theme.rule}`, borderRadius: 6, padding: 12, background: live ? '#fff8e6' : theme.paper }}>
+          <div key={i} className="card-hover" style={{ border: `1px solid ${theme.rule}`, borderRadius: 6, padding: 12, background: live ? '#fff8e6' : theme.paper }}>
             <div style={{ fontFamily: theme.sans, fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: live ? theme.gold : theme.muted }}>
               {label}{live && ' \u2022 LIVE'}
             </div>

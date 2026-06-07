@@ -4,7 +4,7 @@ import { Loading } from './Status.jsx'
 import TeamLogo from './TeamLogo.jsx'
 
 const th = { fontFamily: theme.sans, fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: theme.muted, textAlign: 'right', padding: '8px 10px', fontWeight: 700 }
-const td = { fontFamily: theme.sans, fontSize: 14, color: theme.ink, textAlign: 'right', padding: '10px', borderTop: `1px solid ${theme.rule}` }
+const td = { fontFamily: theme.sans, fontSize: 14, color: theme.ink, textAlign: 'right', padding: '10px', borderTop: `1px solid ${theme.rule}`, whiteSpace: 'nowrap' }
 const last10 = (t) => { const s = (t.records?.splitRecords || []).find((x) => x.type === 'lastTen'); return s ? `${s.wins}-${s.losses}` : '\u2014' }
 
 // Last-10 form: tall navy bar for a win, short light bar for a loss (oldest \u2192 newest).
@@ -28,9 +28,9 @@ export default function Standings({ standings, form }) {
       <table>
         <thead>
           <tr>
-            <th style={{ ...th, textAlign: 'left' }}>Team</th>
-            <th style={th}>W</th><th style={th}>L</th><th style={th}>PCT</th>
-            <th style={th}>GB</th><th style={th}>L10</th><th style={th}>Strk</th><th style={th}>Form</th><th style={th}>RunDiff</th>
+            <th scope="col" style={{ ...th, textAlign: 'left' }}>Team</th>
+            <th scope="col" style={th}>W</th><th scope="col" style={th}>L</th><th scope="col" style={th}>PCT</th>
+            <th scope="col" style={th}>GB</th><th scope="col" style={th}>L10</th><th scope="col" style={th}>Strk</th><th scope="col" style={th}>Form</th><th scope="col" style={th}>RunDiff</th>
           </tr>
         </thead>
         <tbody>
@@ -38,7 +38,7 @@ export default function Standings({ standings, form }) {
             const me = t.team.id === TEAM_ID
             const rd = t.runDifferential
             return (
-              <tr key={t.team.id} style={{ background: me ? theme.wash : 'transparent' }}>
+              <tr key={t.team.id} className={me ? undefined : 'hover-row'} style={me ? { background: theme.wash } : undefined}>
                 <td style={{ ...td, textAlign: 'left' }}>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, fontFamily: theme.serif, fontSize: 16, fontWeight: me ? 700 : 400, color: me ? theme.navy : theme.ink }}>
                     <TeamLogo id={t.team.id} size={22} />

@@ -3,10 +3,11 @@ import { TEAM_ID } from '../config.js'
 import { Loading } from './Status.jsx'
 
 const gamesBack = (lw, ll, w, l) => ((lw - w) + (l - ll)) / 2
+const ord = (n) => { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]) }
 
 // Receives shared standings from App (single fetch feeds Pulse + Standings); lastGame is derived
 // from the division schedules in App.
-export default function Pulse({ standings, lastGame }) {
+export default function Pulse({ standings, lastGame, ranks }) {
   if (!standings) return <Loading />
 
   const me = standings.find((t) => t.team.id === TEAM_ID)
@@ -57,6 +58,11 @@ export default function Pulse({ standings, lastGame }) {
         <div style={{ fontFamily: theme.sans, fontSize: 13, color: theme.muted, marginTop: 18 }}>
           <span style={{ fontWeight: 700, color: lastGame.won ? theme.navy : theme.red }}>{lastGame.won ? 'W' : 'L'}</span>
           {' '}Latest: {lastGame.won ? 'beat' : 'lost to'} {lastGame.oppName} {lastGame.me}{'\u2013'}{lastGame.opp} {lastGame.home ? 'at home' : 'on the road'}.
+        </div>
+      )}
+      {ranks && (
+        <div style={{ fontFamily: theme.sans, fontSize: 13, color: theme.muted, marginTop: 10 }}>
+          {ord(ranks.runsScored.rank)} in the NL in runs scored · {ord(ranks.runsAllowed.rank)} in runs allowed.
         </div>
       )}
       {note && <div style={{ fontFamily: theme.sans, fontSize: 13, color: theme.muted, marginTop: 10, lineHeight: 1.55, maxWidth: 620 }}>{note}</div>}
