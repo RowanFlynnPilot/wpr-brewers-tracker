@@ -83,21 +83,36 @@ export async function fetchPitcherSeason(personId) {
   return data.stats?.[0]?.splits?.[0]?.stat || null
 }
 
+// Run async `worker` over `items` with at most `size` in flight; failures resolve to null.
+async function pooled(items, size, worker) {
+  const out = new Array(items.length)
+  let next = 0
+  const run = async () => {
+    while (next < items.length) {
+      const i = next++
+      try { out[i] = await worker(items[i], i) } catch { out[i] = null }
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(size, items.length) }, run))
+  return out
+}
+
 // Brewers' Final games played on a given month/day across past seasons — for "this day in history".
-// One small request per year (run in parallel, failures tolerated); kept client-side per the
-// project architecture — no scraper, no committed history file.
+// One small request per year, throttled to a few at a time (failures tolerated). Only `linescore`
+// is hydrated (enough for the score, innings, and hits). Kept client-side per the project
+// architecture — no scraper, no committed history file.
 export async function fetchThisDayGames(month, day, fromYear, toYear) {
   const mm = String(month).padStart(2, '0')
   const dd = String(day).padStart(2, '0')
   const years = []
   for (let y = fromYear; y <= toYear; y++) years.push(y)
-  const results = await Promise.allSettled(
-    years.map((y) => getJSON(`/schedule?sportId=1&teamId=${TEAM_ID}&startDate=${y}-${mm}-${dd}&endDate=${y}-${mm}-${dd}&hydrate=linescore,team,decisions`))
+  const responses = await pooled(years, 8, (y) =>
+    getJSON(`/schedule?sportId=1&teamId=${TEAM_ID}&startDate=${y}-${mm}-${dd}&endDate=${y}-${mm}-${dd}&hydrate=linescore`)
   )
   const games = []
-  results.forEach((r, i) => {
-    if (r.status !== 'fulfilled') return
-    ;(r.value.dates || []).forEach((d) => d.games.forEach((g) => {
+  responses.forEach((data, i) => {
+    if (!data) return
+    ;(data.dates || []).forEach((d) => d.games.forEach((g) => {
       if (g.status.detailedState === 'Final') games.push({ year: years[i], game: g })
     }))
   })

@@ -1,31 +1,43 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { theme } from '../theme.js'
 import { fetchThisDayGames } from '../api.js'
 import { rankThisDay } from '../games.js'
 import { Loading } from './Status.jsx'
 
 // "This day in Brewers history" — finds the most fun game the Brewers played on today's date
-// across past seasons (1970 on). Self-contained and fail-soft: the fetch is deferred slightly so
-// it never competes with the primary content, and the whole section hides itself if nothing loads.
+// across past seasons (1970 on). Self-contained and fail-soft. The per-season fan-out only fires
+// once the section nears the viewport, so visitors who never scroll here cost zero requests.
 export default function ThisDay() {
+  const ref = useRef(null)
+  const [armed, setArmed] = useState(false)
   const [items, setItems] = useState(null)
   const [error, setError] = useState(false)
 
+  // Arm the fetch when the section approaches the viewport. Attach the observer only after a beat,
+  // so the still-loading (short) page doesn't report the section as visible at the very top.
   useEffect(() => {
-    const now = new Date()
-    const month = now.getMonth() + 1
-    const day = now.getDate()
-    const toYear = now.getFullYear() - 1
+    if (armed || !ref.current) return
+    const el = ref.current
+    let io
     const t = setTimeout(() => {
-      fetchThisDayGames(month, day, 1970, toYear)
-        .then((g) => setItems(rankThisDay(g)))
-        .catch(() => setError(true))
-    }, 900)
-    return () => clearTimeout(t)
-  }, [])
+      io = new IntersectionObserver((entries) => {
+        if (entries.some((e) => e.isIntersecting)) { setArmed(true); io.disconnect() }
+      }, { rootMargin: '300px' })
+      io.observe(el)
+    }, 1200)
+    return () => { clearTimeout(t); if (io) io.disconnect() }
+  }, [armed])
+
+  useEffect(() => {
+    if (!armed) return
+    const now = new Date()
+    fetchThisDayGames(now.getMonth() + 1, now.getDate(), 1970, now.getFullYear() - 1)
+      .then((g) => setItems(rankThisDay(g)))
+      .catch(() => setError(true))
+  }, [armed])
 
   if (error) return null
-  if (!items) return <Loading lines={2} />
+  if (!items) return <div ref={ref}><Loading lines={2} /></div>
   if (!items.length) {
     return <div style={{ fontFamily: theme.sans, fontSize: 14, color: theme.muted }}>No Brewers games fell on today's date in seasons past.</div>
   }
