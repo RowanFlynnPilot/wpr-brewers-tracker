@@ -12,6 +12,7 @@ import Pulse from './components/Pulse.jsx'
 import Standings from './components/Standings.jsx'
 import Schedule from './components/Schedule.jsx'
 import Players from './components/Players.jsx'
+import ThisDay from './components/ThisDay.jsx'
 import { Loading } from './components/Status.jsx'
 
 // Recharts is the heaviest dependency — load the race chart in its own chunk.
@@ -76,6 +77,7 @@ export default function App() {
           <Suspense fallback={<Loading block />}><Race schedules={schedules} /></Suspense>
         </Section>
         <Section kicker="Recent & upcoming" title="The schedule"><Schedule /></Section>
+        <Section kicker="From the vault" title="This day in Brewers history"><ThisDay /></Section>
         <Section kicker="At the plate & on the mound" title="Team leaders" sponsor={SPONSORS.leaders} slot="leaders"><Players /></Section>
 
         <footer style={{ borderTop: `1px solid ${theme.rule}`, padding: '22px 0 44px', fontFamily: theme.sans, fontSize: 11, color: theme.muted, lineHeight: 1.6 }}>

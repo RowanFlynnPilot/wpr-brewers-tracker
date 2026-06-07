@@ -57,6 +57,11 @@ MLB Stats API (statsapi.mlb.com) → fetch() in browser → React/Vite → GitHu
   from the hydrated roster (see `Players.jsx`).
 - Logos: `https://www.mlbstatic.com/team-logos/{teamId}.svg`.
   Headshots: `https://midfield.mlbstatic.com/v1/people/{personId}/spots/120`.
+- "This day in history" (`ThisDay.jsx`) intentionally fires one small schedule request per season
+  (1970→last year, in parallel, failures tolerated) to find games on today's date — there is no
+  single historical endpoint. This is the architecture-compliant alternative to a committed
+  history file; the per-year fan-out is deliberate, not an oversight. The fetch is deferred ~900ms
+  so it never competes with primary content.
 
 ## Design principles in force
 

@@ -83,6 +83,27 @@ export async function fetchPitcherSeason(personId) {
   return data.stats?.[0]?.splits?.[0]?.stat || null
 }
 
+// Brewers' Final games played on a given month/day across past seasons — for "this day in history".
+// One small request per year (run in parallel, failures tolerated); kept client-side per the
+// project architecture — no scraper, no committed history file.
+export async function fetchThisDayGames(month, day, fromYear, toYear) {
+  const mm = String(month).padStart(2, '0')
+  const dd = String(day).padStart(2, '0')
+  const years = []
+  for (let y = fromYear; y <= toYear; y++) years.push(y)
+  const results = await Promise.allSettled(
+    years.map((y) => getJSON(`/schedule?sportId=1&teamId=${TEAM_ID}&startDate=${y}-${mm}-${dd}&endDate=${y}-${mm}-${dd}&hydrate=linescore,team,decisions`))
+  )
+  const games = []
+  results.forEach((r, i) => {
+    if (r.status !== 'fulfilled') return
+    ;(r.value.dates || []).forEach((d) => d.games.forEach((g) => {
+      if (g.status.detailedState === 'Final') games.push({ year: years[i], game: g })
+    }))
+  })
+  return games
+}
+
 // Active roster with season stats hydrated in a single call.
 export async function fetchRosterStats() {
   const data = await getJSON(`/teams/${TEAM_ID}/roster?rosterType=active&hydrate=person(stats(type=season,season=${SEASON}))`)
