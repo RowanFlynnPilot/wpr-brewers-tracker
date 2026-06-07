@@ -61,6 +61,14 @@ export async function fetchFeaturedGame() {
   )
 }
 
+// One pitcher's season pitching line (ERA, W-L, K, …). Returns the stat object, or null if the
+// pitcher has no season splits yet. Schedule/hydrate can't carry these, so the hero + schedule
+// cards fetch them per probable pitcher on demand.
+export async function fetchPitcherSeason(personId) {
+  const data = await getJSON(`/people/${personId}/stats?stats=season&season=${SEASON}&group=pitching`)
+  return data.stats?.[0]?.splits?.[0]?.stat || null
+}
+
 // Active roster with season stats hydrated in a single call.
 export async function fetchRosterStats() {
   const data = await getJSON(`/teams/${TEAM_ID}/roster?rosterType=active&hydrate=person(stats(type=season,season=${SEASON}))`)

@@ -4,6 +4,7 @@ import { TEAM_ID, SPONSORS } from '../config.js'
 import { fetchFeaturedGame } from '../api.js'
 import Sponsor from './Sponsor.jsx'
 import TeamLogo from './TeamLogo.jsx'
+import PitcherLine from './PitcherLine.jsx'
 
 const REFRESH_MS = 45000 // API caches 60s; poll a touch faster so a live score never feels stale.
 
@@ -44,15 +45,19 @@ export default function GameHero() {
   const inning = ls && live ? `${ls.inningHalf || ''} ${ls.currentInning ?? ''}`.trim() : ''
   const won = final && me.score > opp.score
 
-  const Side = ({ team, name, score, prob }) => (
+  const Side = ({ team, name, score, pitcher }) => (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
       <TeamLogo id={team.team.id} size={40} />
-      <div style={{ minWidth: 0 }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontFamily: theme.serif, fontSize: 20, color: theme.ink, lineHeight: 1.1 }}>{name}</div>
         {(live || final) ? (
-          <div style={{ fontFamily: theme.sans, fontSize: 11, color: theme.muted }}>{prob ? prob : ' '}</div>
+          pitcher && <div style={{ fontFamily: theme.sans, fontSize: 11, color: theme.muted, marginTop: 2 }}>{pitcher.fullName}</div>
         ) : (
-          <div style={{ fontFamily: theme.sans, fontSize: 11, color: theme.muted }}>{prob ? `Prob: ${prob}` : 'Probable TBA'}</div>
+          pitcher ? (
+            <PitcherLine personId={pitcher.id} fullName={pitcher.fullName} size={24} />
+          ) : (
+            <div style={{ fontFamily: theme.sans, fontSize: 11, color: theme.muted, marginTop: 2 }}>Probable TBA</div>
+          )
         )}
       </div>
       {(live || final) && (
@@ -79,9 +84,9 @@ export default function GameHero() {
       </div>
 
       <div style={{ display: 'grid', gap: 12 }}>
-        <Side team={me} name="Brewers" score={me.score} prob={me.probablePitcher?.fullName} />
+        <Side team={me} name="Brewers" score={me.score} pitcher={me.probablePitcher} />
         <div style={{ fontFamily: theme.sans, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: theme.muted }}>{home ? 'vs' : 'at'}</div>
-        <Side team={opp} name={oppName} score={opp.score} prob={opp.probablePitcher?.fullName} />
+        <Side team={opp} name={oppName} score={opp.score} pitcher={opp.probablePitcher} />
       </div>
     </div>
   )

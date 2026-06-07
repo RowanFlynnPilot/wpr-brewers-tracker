@@ -4,6 +4,7 @@ import { TEAM_ID } from '../config.js'
 import { fetchTeamSchedule } from '../api.js'
 import { Loading, ErrorState } from './Status.jsx'
 import TeamLogo from './TeamLogo.jsx'
+import PitcherLine from './PitcherLine.jsx'
 
 export default function Schedule() {
   const [games, setGames] = useState(null)
@@ -26,7 +27,7 @@ export default function Schedule() {
         const live = game.status.detailedState === 'In Progress'
         const myScore = game.teams[home ? 'home' : 'away'].score
         const oppScore = game.teams[home ? 'away' : 'home'].score
-        const probable = game.teams[home ? 'home' : 'away'].probablePitcher?.fullName
+        const probable = game.teams[home ? 'home' : 'away'].probablePitcher
         const won = final && myScore > oppScore
         const label = new Date(date + 'T12:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
         return (
@@ -42,8 +43,10 @@ export default function Schedule() {
               <div style={{ fontFamily: theme.serif, fontSize: 20, marginTop: 3, color: won ? theme.navy : theme.ink }}>
                 {won ? 'W' : final ? 'L' : ''} {myScore}{'\u2013'}{oppScore}
               </div>
+            ) : probable ? (
+              <PitcherLine personId={probable.id} fullName={probable.fullName} />
             ) : (
-              <div style={{ fontFamily: theme.sans, fontSize: 12, color: theme.muted, marginTop: 5 }}>{probable ? `Prob: ${probable}` : 'Probable TBA'}</div>
+              <div style={{ fontFamily: theme.sans, fontSize: 12, color: theme.muted, marginTop: 5 }}>Probable TBA</div>
             )}
           </div>
         )
