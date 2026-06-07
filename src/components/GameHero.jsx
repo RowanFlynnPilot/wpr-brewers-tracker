@@ -79,7 +79,7 @@ export default function GameHero() {
             {final && (won ? 'Brewers win' : 'Final')}
           </div>
         </div>
-        <Sponsor sponsor={SPONSORS.header} variant="light" compact />
+        <Sponsor sponsor={SPONSORS.header} variant="light" compact slot="hero" />
       </div>
 
       <div style={{ display: 'grid', gap: 12 }}>

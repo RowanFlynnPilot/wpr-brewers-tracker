@@ -16,7 +16,7 @@ export default function BrewersBanner() {
             <div style={{ fontFamily: theme.serif, fontStyle: 'italic', fontSize: 16, color: '#cdd6e3', marginTop: 4 }}>The shape of Milwaukee's season, updated live.</div>
           </div>
         </div>
-        <Sponsor sponsor={SPONSORS.header} variant="dark" />
+        <Sponsor sponsor={SPONSORS.header} variant="dark" slot="banner" />
       </div>
     </div>
   )

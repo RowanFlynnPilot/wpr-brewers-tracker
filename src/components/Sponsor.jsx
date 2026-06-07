@@ -1,15 +1,24 @@
 import { theme } from '../theme.js'
 import { SPONSOR_INQUIRY } from '../config.js'
+import { track } from '../analytics.js'
 
 // Sponsor lockup. One responsibility: render a paid sponsor, or an "available" upsell card.
 // `variant` adapts the chrome to the dark navy banner vs. a light editorial section.
-export default function Sponsor({ sponsor, variant = 'light', compact = false }) {
+// `slot` labels the placement (banner/hero/race/leaders) for per-slot click reporting.
+export default function Sponsor({ sponsor, variant = 'light', compact = false, slot }) {
   const dark = variant === 'dark'
   const labelColor = dark ? '#cdd6e3' : theme.muted
   const nameColor = dark ? '#fff' : theme.ink
   const border = dark ? 'rgba(255,255,255,0.4)' : theme.rule
 
-  const linkProps = sponsor?.url ? { href: sponsor.url, target: '_blank', rel: 'noopener noreferrer sponsored' } : {}
+  const linkProps = sponsor?.url
+    ? {
+        href: sponsor.url,
+        target: '_blank',
+        rel: 'noopener noreferrer sponsored',
+        onClick: () => track('Sponsor Click', { sponsor: sponsor.name, slot: slot || 'unknown' }),
+      }
+    : {}
 
   // Compact credit — a one-line "Presented by NAME" link, no logo card. For tight placements
   // (e.g. the hero) where a full lockup already appears elsewhere on the page.

@@ -36,6 +36,10 @@ MLB Stats API (statsapi.mlb.com) → fetch() in browser → React/Vite → GitHu
   `USE_TEAM_LOGO`, and brand asset URLs. Change a team here and nowhere else.
 - `src/theme.js` — palette + Fraunces/Public Sans type pairing (matches the
   "Follow the Money" budget widget design system).
+- `src/analytics.js` — opt-in, cookieless Plausible loader + `track()` for sponsor ROI
+  (page views = impressions, `Sponsor Click` events = click-throughs per slot). Disabled
+  unless `ANALYTICS.domain` is set in `config.js`; off by default = no external script, no
+  dependency. This is analytics only — it is NOT the forbidden data scraper/cache.
 - `src/components/` — one file per concern (separation of concerns):
   - `Masthead`, `BrewersBanner`, `Section` — chrome.
   - `Pulse`, `Standings` — consume shared standings fetched once in `App`.

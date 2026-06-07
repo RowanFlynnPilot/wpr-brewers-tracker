@@ -45,3 +45,11 @@ export const SPONSOR_INQUIRY = 'sales@wausaupilotandreview.com'
 // Shown in the footer when a gaming brand is the title sponsor. Editable; set to '' to hide.
 export const SPONSOR_DISCLAIMER =
   'Must be 21+. If you or someone you know has a gambling problem, call 1-800-GAMBLER.'
+
+// Privacy-light analytics (Plausible — cookieless, no consent banner). For sponsor ROI:
+// page views = impressions, plus a 'Sponsor Click' event per slot = click-throughs.
+// Set `domain` to your Plausible site to enable; leave '' and nothing loads (no dependency).
+export const ANALYTICS = {
+  domain: '', // e.g. 'rowanflynnpilot.github.io' — the site you add in your Plausible dashboard
+  src: 'https://plausible.io/js/script.js',
+}
