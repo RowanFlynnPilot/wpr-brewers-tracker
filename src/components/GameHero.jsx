@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { theme } from '../theme.js'
 import { TEAM_ID, SPONSORS } from '../config.js'
-import { fetchFeaturedGame } from '../api.js'
+import { fetchFeaturedGame, fetchLiveExtras } from '../api.js'
 import { useIsNarrow } from '../useIsNarrow.js'
 import Sponsor from './Sponsor.jsx'
 import TeamLogo from './TeamLogo.jsx'
@@ -31,6 +31,7 @@ export default function GameHero() {
   const [game, setGame] = useState(null)
   const [error, setError] = useState(false)
   const [now, setNow] = useState(Date.now())
+  const [extras, setExtras] = useState(null)
   const narrow = useIsNarrow()
 
   const load = useCallback(() => {
@@ -46,13 +47,19 @@ export default function GameHero() {
   }, [])
 
   const live = game?.status?.abstractGameState === 'Live'
+  const gamePk = game?.gamePk
   useEffect(() => {
-    if (!live) return
-    const refresh = () => { if (!document.hidden) load() }
+    if (!live) { setExtras(null); return }
+    const refresh = () => {
+      if (document.hidden) return
+      load()
+      if (gamePk) fetchLiveExtras(gamePk).then(setExtras).catch(() => {})
+    }
+    refresh()
     const id = setInterval(refresh, REFRESH_MS)
     document.addEventListener('visibilitychange', refresh)
     return () => { clearInterval(id); document.removeEventListener('visibilitychange', refresh) }
-  }, [live, load])
+  }, [live, gamePk, load])
 
   if (error || !game) return null
 
@@ -133,6 +140,38 @@ export default function GameHero() {
           {(ls.offense?.batter || ls.defense?.pitcher) && (
             <div style={{ fontFamily: theme.sans, fontSize: 12, color: theme.muted, marginTop: 4 }}>
               {[ls.offense?.batter && `At bat: ${ls.offense.batter.fullName}`, ls.defense?.pitcher && `P: ${ls.defense.pitcher.fullName}`].filter(Boolean).join(' · ')}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Win probability + recent plays (live) */}
+      {live && extras && (
+        <div style={{ margin: '0 0 18px' }}>
+          {extras.homeWinPct != null && (() => {
+            const mePct = Math.round(home ? extras.homeWinPct : extras.awayWinPct)
+            return (
+              <div style={{ maxWidth: 320, margin: '0 auto' }}>
+                <div style={{ fontFamily: theme.sans, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: theme.muted, marginBottom: 5 }}>Win probability</div>
+                <div style={{ display: 'flex', height: 8, borderRadius: 4, overflow: 'hidden', background: theme.rule }}>
+                  <div style={{ width: `${mePct}%`, background: theme.navy }} />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: theme.sans, fontSize: 11, marginTop: 4 }}>
+                  <span style={{ color: theme.navy, fontWeight: 700 }}>Brewers {mePct}%</span>
+                  <span style={{ color: theme.muted }}>{oppName} {100 - mePct}%</span>
+                </div>
+              </div>
+            )
+          })()}
+          {extras.plays?.length > 0 && (
+            <div style={{ maxWidth: 440, margin: '14px auto 0', textAlign: 'left' }}>
+              <div style={{ fontFamily: theme.sans, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: theme.muted, marginBottom: 4 }}>Latest plays</div>
+              {extras.plays.map((p, i) => (
+                <div key={i} style={{ fontFamily: theme.sans, fontSize: 12, color: p.scoring ? theme.ink : theme.muted, lineHeight: 1.4, padding: '4px 0', borderTop: i ? `1px solid ${theme.rule}` : 'none' }}>
+                  <span style={{ color: theme.gold, fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>{p.half === 'top' ? 'Top' : 'Bot'} {p.inning}</span>{' '}
+                  {p.desc.length > 96 ? p.desc.slice(0, 95).replace(/\s+\S*$/, '') + '…' : p.desc}
+                </div>
+              ))}
             </div>
           )}
         </div>

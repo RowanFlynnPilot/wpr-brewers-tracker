@@ -145,6 +145,26 @@ export async function fetchGameBox(gamePk) {
   return { box, line }
 }
 
+// Live extras for the game hero: win probability + the most recent plays. Only fetched while a
+// game is in progress, on the hero's refresh cadence.
+export async function fetchLiveExtras(gamePk) {
+  const [cm, pbp] = await Promise.all([
+    getJSON(`/game/${gamePk}/contextMetrics`).catch(() => ({})),
+    getJSON(`/game/${gamePk}/playByPlay`).catch(() => ({})),
+  ])
+  const plays = (pbp.allPlays || []).slice(-3).reverse().map((p) => ({
+    half: p.about?.halfInning,
+    inning: p.about?.inning,
+    scoring: !!p.about?.isScoringPlay,
+    desc: p.result?.description || '',
+  }))
+  return {
+    homeWinPct: typeof cm.homeWinProbability === 'number' ? cm.homeWinProbability : null,
+    awayWinPct: typeof cm.awayWinProbability === 'number' ? cm.awayWinProbability : null,
+    plays,
+  }
+}
+
 // Active roster with season stats hydrated in a single call.
 export async function fetchRosterStats() {
   const data = await getJSON(`/teams/${TEAM_ID}/roster?rosterType=active&hydrate=person(stats(type=season,season=${SEASON}))`)
