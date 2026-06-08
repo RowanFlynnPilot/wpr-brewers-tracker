@@ -40,12 +40,18 @@ export default function Pulse({ standings, lastGame, ranks }) {
       (xSeason ? ` At this rate they're on a ${xSeason.wins}-win pace.` : '')
 
   // Marquee stats — natural width, grouped left so the row reads tight rather than stretched.
-  const cell = (value, label) => (
+  // Run diff / streak / lead are color-coded (navy good, red bad) for an at-a-glance read.
+  const cell = (value, label, color = theme.ink) => (
     <div style={{ minWidth: 74 }}>
-      <div style={{ fontFamily: theme.serif, fontSize: narrow ? 30 : 36, color: theme.ink, lineHeight: 1 }}>{value}</div>
+      <div style={{ fontFamily: theme.serif, fontSize: narrow ? 30 : 36, color, lineHeight: 1 }}>{value}</div>
       <div style={{ fontFamily: theme.sans, fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: theme.muted, marginTop: 6 }}>{label}</div>
     </div>
   )
+  const rd = me.runDifferential
+  const rdColor = rd > 0 ? theme.navy : rd < 0 ? theme.red : theme.ink
+  const sc = me.streak?.streakCode || ''
+  const streakColor = sc[0] === 'W' ? theme.navy : sc[0] === 'L' ? theme.red : theme.ink
+  const leadColor = rank === 1 ? theme.navy : theme.ink
 
   // Secondary stats — a compact strip below the marquee numbers.
   const minis = []
@@ -59,16 +65,18 @@ export default function Pulse({ standings, lastGame, ranks }) {
     <div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: narrow ? '20px 22px' : '24px 34px' }}>
         {cell(rec(me), 'Record')}
-        {cell(rank === 1 ? `+${lead}` : `${lead}`, rank === 1 ? 'NL Central lead' : 'Games back')}
-        {cell(`${me.runDifferential > 0 ? '+' : ''}${me.runDifferential}`, 'Run diff')}
-        {cell(me.streak?.streakCode || DASH, 'Streak')}
+        {cell(rank === 1 ? `+${lead}` : `${lead}`, rank === 1 ? 'NL Central lead' : 'Games back', leadColor)}
+        {cell(`${rd > 0 ? '+' : ''}${rd}`, 'Run diff', rdColor)}
+        {cell(me.streak?.streakCode || DASH, 'Streak', streakColor)}
         {cell(l10 ? rec(l10) : DASH, 'Last 10')}
       </div>
 
       {minis.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px 18px', fontFamily: theme.sans, fontSize: 13, color: theme.muted, marginTop: 16 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 18 }}>
           {minis.map(([v, k]) => (
-            <span key={k}><span style={{ color: theme.ink, fontWeight: 700 }}>{v}</span> {k}</span>
+            <span key={k} style={{ background: theme.wash, borderRadius: 20, padding: '4px 11px', fontFamily: theme.sans, fontSize: 12.5, whiteSpace: 'nowrap' }}>
+              <span style={{ color: theme.ink, fontWeight: 700 }}>{v}</span> <span style={{ color: theme.muted }}>{k}</span>
+            </span>
           ))}
         </div>
       )}

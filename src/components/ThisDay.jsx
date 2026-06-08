@@ -1,15 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { theme } from '../theme.js'
 import { fetchThisDayGames, fetchDecisivePlay } from '../api.js'
-import { rankThisDay } from '../games.js'
+import { rankThisDay, winningHitSentence } from '../games.js'
 import { Loading } from './Status.jsx'
 
-// First two sentences of a play-by-play description (the hit + the run scoring).
-const trimPlay = (d) => d ? d.split('. ').slice(0, 2).join('. ').replace(/\.?$/, '.') : null
-
-// "This day in Brewers history" — finds the most fun game the Brewers played on today's date
-// across past seasons (1970 on) and surfaces the go-ahead hit for the featured one. Self-contained
-// and fail-soft: the per-season fan-out only fires once the section nears the viewport.
+// "This day in Brewers history" — a single highlight: the most fun game the Brewers played on
+// today's date across past seasons (1970 on), with the go-ahead hit. Self-contained and fail-soft;
+// the per-season fan-out only fires once the section nears the viewport.
 export default function ThisDay() {
   const ref = useRef(null)
   const [armed, setArmed] = useState(false)
@@ -57,45 +54,17 @@ export default function ThisDay() {
   }
 
   const top = items[0]
-  // Runner-ups: prefer distinct categories so the list isn't all the same kind of game.
-  const others = []
-  const used = new Set([top.category])
-  for (const it of items.slice(1)) {
-    if (it.rank < 1 || used.has(it.category)) continue
-    others.push(it); used.add(it.category)
-    if (others.length === 3) break
-  }
-  for (const it of items.slice(1)) {
-    if (others.length === 3) break
-    if (it.rank >= 1 && !others.includes(it)) others.push(it)
-  }
-
-  const playLine = detail && (detail.description ? trimPlay(detail.description) : detail.batter && `${detail.batter} drove in the go-ahead run.`)
+  const hit = top.won ? winningHitSentence(detail) : null
 
   return (
-    <div>
-      <div style={{ border: `1px solid ${theme.rule}`, borderLeft: `3px solid ${theme.gold}`, borderRadius: 8, background: theme.wash, padding: '18px 20px' }}>
-        <div style={{ fontFamily: theme.sans, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: theme.gold, fontWeight: 700 }}>
-          On this day in {top.year} · {top.category}
-        </div>
-        <div style={{ fontFamily: theme.serif, fontSize: 22, color: theme.ink, lineHeight: 1.25, marginTop: 6, maxWidth: 640 }}>
-          {top.text}
-        </div>
-        {playLine && (
-          <div style={{ fontFamily: theme.serif, fontStyle: 'italic', fontSize: 14, color: theme.muted, lineHeight: 1.45, marginTop: 8, maxWidth: 640 }}>
-            {playLine}
-          </div>
-        )}
+    <div style={{ border: `1px solid ${theme.rule}`, borderLeft: `3px solid ${theme.gold}`, borderRadius: 8, background: theme.wash, padding: '20px 22px' }}>
+      <div style={{ fontFamily: theme.serif, fontSize: 21, color: theme.ink, lineHeight: 1.4, maxWidth: 660 }}>
+        On this day in {top.year}, {top.text}
       </div>
-
-      {others.length > 0 && (
-        <ul style={{ listStyle: 'none', margin: '16px 0 0', padding: 0 }}>
-          {others.map((o) => (
-            <li key={o.year} style={{ fontFamily: theme.sans, fontSize: 13, color: theme.muted, padding: '5px 0', borderTop: `1px solid ${theme.rule}` }}>
-              <span style={{ color: theme.ink, fontWeight: 700 }}>{o.year}</span> — {o.text}
-            </li>
-          ))}
-        </ul>
+      {hit && (
+        <div style={{ fontFamily: theme.serif, fontStyle: 'italic', fontSize: 15, color: theme.muted, lineHeight: 1.5, marginTop: 8, maxWidth: 660 }}>
+          {hit}
+        </div>
       )}
     </div>
   )

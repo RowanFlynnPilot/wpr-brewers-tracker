@@ -32,6 +32,37 @@ export function lastFinalGame(schedules) {
   return fs.length ? fs[fs.length - 1] : null
 }
 
+// Turn a raw play-by-play decisive play into a natural sentence about the go-ahead hit.
+// e.g. { batter: 'Aramis Ramirez', description: 'Aramis Ramirez singles ... Jean Segura scores.' }
+//   -> "Aramis Ramirez singled home Jean Segura with the go-ahead run."
+export function winningHitSentence(detail) {
+  if (!detail || !detail.batter) return null
+  const d = detail.description || ''
+  const batter = detail.batter
+  const after = d.slice(d.indexOf(batter) + batter.length)
+  const verb =
+    /grand slam/i.test(after) ? 'grand-slam' :
+    /home run|homers/i.test(after) ? 'homer' :
+    /doubles/i.test(after) ? 'doubled' :
+    /triples/i.test(after) ? 'tripled' :
+    /singles/i.test(after) ? 'singled' :
+    /sacrifice fly|sac fly/i.test(after) ? 'sacfly' :
+    /walks/i.test(after) ? 'walked' : null
+  // The scorer sits in the sentence ending "... <Name> scores". Isolate that sentence first (so we
+  // don't span a fielder's name in the hit clause), then take the trailing capitalized name.
+  const scoreSentence = d.split('. ').find((s) => / scores\b/.test(s)) || ''
+  const before = scoreSentence.split(/ scores\b/)[0]
+  const sm = before.match(/([A-ZÀ-Þ][a-zà-ÿ'’-]+(?: [A-ZÀ-Þ][a-zà-ÿ'’-]+)*)\s*$/)
+  const scorer = sm ? sm[1] : null
+
+  if (verb === 'homer') return `${batter} homered to put the Brewers ahead for good.`
+  if (verb === 'grand-slam') return `${batter} hit a grand slam to put the Brewers ahead for good.`
+  if (scorer && (verb === 'singled' || verb === 'doubled' || verb === 'tripled')) return `${batter} ${verb} home ${scorer} with the go-ahead run.`
+  if (scorer && verb === 'sacfly') return `${batter} brought ${scorer} home on a sacrifice fly for the go-ahead run.`
+  if (scorer) return `${batter} drove in ${scorer} with the go-ahead run.`
+  return `${batter} drove in the go-ahead run.`
+}
+
 // Score + describe each "this day in history" game, best first. Surfaces the fun angle:
 // no-hitter > walk-off > comeback > extra innings > shutout/blowout > win > loss.
 export function rankThisDay(games) {
@@ -62,14 +93,14 @@ export function rankThisDay(games) {
     const walkoff = home && won && (lastInning?.home?.runs || 0) > 0 && mePrev <= oppPrev
 
     let rank, category, text
-    if (won && oppHits === 0) { rank = 7; category = 'no-hitter'; text = `No-hit the ${oppName}, ${me}–${opp}.` }
-    else if (walkoff) { rank = 6; category = 'walk-off'; text = `Walked off the ${oppName} ${me}–${opp}${extra ? ` in ${ls.currentInning} innings` : ''}.` }
-    else if (won && maxDef >= 3) { rank = 5; category = 'comeback'; text = `Rallied from ${maxDef} runs down to beat the ${oppName} ${me}–${opp}.` }
-    else if (won && extra) { rank = 4; category = 'extra innings'; text = `Outlasted the ${oppName} ${me}–${opp} in ${ls.currentInning} innings.` }
-    else if (won && opp === 0) { rank = 3; category = 'shutout'; text = `Blanked the ${oppName} ${me}–${opp}.` }
-    else if (won && margin >= 7) { rank = 3; category = 'blowout'; text = `Routed the ${oppName} ${me}–${opp}.` }
-    else if (won) { rank = 1; category = 'win'; text = `Beat the ${oppName} ${me}–${opp}.` }
-    else { rank = 0; category = 'loss'; text = `Fell to the ${oppName} ${opp}–${me}.` }
+    if (won && oppHits === 0) { rank = 7; category = 'no-hitter'; text = `the Brewers no-hit the ${oppName}, ${me}–${opp}.` }
+    else if (walkoff) { rank = 6; category = 'walk-off'; text = `the Brewers walked off the ${oppName}, ${me}–${opp}${extra ? `, in ${ls.currentInning} innings` : ''}.` }
+    else if (won && maxDef >= 3) { rank = 5; category = 'comeback'; text = `the Brewers rallied from ${maxDef} runs down to beat the ${oppName}, ${me}–${opp}.` }
+    else if (won && extra) { rank = 4; category = 'extra innings'; text = `the Brewers outlasted the ${oppName} in ${ls.currentInning} innings, ${me}–${opp}.` }
+    else if (won && opp === 0) { rank = 3; category = 'shutout'; text = `the Brewers shut out the ${oppName}, ${me}–${opp}.` }
+    else if (won && margin >= 7) { rank = 3; category = 'blowout'; text = `the Brewers routed the ${oppName}, ${me}–${opp}.` }
+    else if (won) { rank = 1; category = 'win'; text = `the Brewers beat the ${oppName}, ${me}–${opp}.` }
+    else { rank = 0; category = 'loss'; text = `the Brewers fell to the ${oppName}, ${opp}–${me}.` }
 
     return { year, gamePk: game.gamePk, me, opp, oppName, won, rank, category, margin, maxDef, text }
   })
