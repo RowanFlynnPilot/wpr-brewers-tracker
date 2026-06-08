@@ -54,11 +54,11 @@ export default function Pulse({ standings, lastGame, ranks }) {
 
   // Secondary stats — a compact strip below the marquee numbers.
   const minis = []
-  if (home) minis.push([rec(home), 'home'])
-  if (away) minis.push([rec(away), 'away'])
-  if (rank === 1 && me.magicNumber && me.magicNumber !== '-') minis.push([`${me.magicNumber}`, 'magic number'])
-  if (ranks) minis.push([ord(ranks.runsScored.rank), 'in NL runs scored'])
-  if (ranks) minis.push([ord(ranks.runsAllowed.rank), 'in runs allowed'])
+  if (home) minis.push([rec(home), 'Home'])
+  if (away) minis.push([rec(away), 'Away'])
+  if (rank === 1 && me.magicNumber && me.magicNumber !== '-') minis.push([`${me.magicNumber}`, 'Magic number'])
+  if (ranks) minis.push([ord(ranks.runsScored.rank), 'In NL runs scored'])
+  if (ranks) minis.push([ord(ranks.runsAllowed.rank), 'In runs allowed'])
 
   return (
     <div>

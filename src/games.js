@@ -17,13 +17,6 @@ function finals(dates, teamId) {
   return out
 }
 
-// Map of teamId -> last N win/loss booleans (oldest → newest), for the standings sparklines.
-export function recentForm(schedules, n = 10) {
-  const map = {}
-  schedules.forEach(({ id, dates }) => { map[id] = finals(dates, id).slice(-n).map((g) => g.won) })
-  return map
-}
-
 // The home team's most recent completed game, summarized for the pulse recap line.
 export function lastFinalGame(schedules) {
   const mine = schedules.find((s) => s.id === TEAM_ID)

@@ -1,4 +1,4 @@
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from 'recharts'
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine, Legend } from 'recharts'
 import { theme } from '../theme.js'
 import { DIVISION, TEAM_COLORS, TEAM_ID } from '../config.js'
 import { Loading } from './Status.jsx'
@@ -42,7 +42,7 @@ function buildSeries(teams) {
     const row = { date: date.slice(5) }
     recs.forEach((r) => { row[r.id] = gamesBack(leader.w, leader.l, r.w, r.l) })
     return row
-  }).filter((_, i) => i % 2 === 0) // thin to ~every other day for legibility
+  }).filter((_, i, arr) => i % 4 === 0 || i === arr.length - 1) // thin for smoother lines; always keep the latest
 }
 
 export default function Race({ schedules }) {
@@ -62,9 +62,16 @@ export default function Race({ schedules }) {
             <YAxis reversed tick={{ fontFamily: theme.sans, fontSize: 10, fill: theme.muted }} stroke={theme.rule} />
             <ReferenceLine y={0} stroke={theme.ink} strokeWidth={1} />
             <Tooltip contentStyle={{ fontFamily: theme.sans, fontSize: 12, border: `1px solid ${theme.rule}`, background: theme.paper }} formatter={(v, n) => [v === 0 ? 'leads' : `${v} GB`, DIVISION[n]]} />
-            {Object.keys(DIVISION).map((id) => (
-              <Line key={id} type="monotone" dataKey={id} stroke={TEAM_COLORS[id]} strokeWidth={Number(id) === TEAM_ID ? 3 : 1.25} dot={false} isAnimationActive={false} />
-            ))}
+            <Legend verticalAlign="bottom" iconType="plain" wrapperStyle={{ fontFamily: theme.sans, fontSize: 11, paddingTop: 8 }} />
+            {/* Draw rivals first (muted), then the Brewers on top (bold navy). */}
+            {Object.keys(DIVISION)
+              .sort((a, b) => (Number(a) === TEAM_ID ? 1 : 0) - (Number(b) === TEAM_ID ? 1 : 0))
+              .map((id) => {
+                const isMe = Number(id) === TEAM_ID
+                return (
+                  <Line key={id} type="monotone" dataKey={id} name={DIVISION[id]} stroke={TEAM_COLORS[id]} strokeWidth={isMe ? 3 : 1.5} strokeOpacity={isMe ? 1 : 0.55} dot={false} isAnimationActive={false} />
+                )
+              })}
           </LineChart>
         </ResponsiveContainer>
       </div>

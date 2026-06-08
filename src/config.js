@@ -9,7 +9,8 @@ export const TEAM_ID = 158          // Milwaukee Brewers
 export const DIVISION = { 158: 'Brewers', 138: 'Cardinals', 134: 'Pirates', 112: 'Cubs', 113: 'Reds' }
 
 // Line colors for the race chart. The home team is emphasized in the component, not here.
-export const TEAM_COLORS = { 158: '#12284b', 138: '#b0228c', 134: '#a89878', 112: '#9aa6b2', 113: '#7a9b7a' }
+// Calmer, distinct hues for the rivals so the navy Brewers line stays the focus.
+export const TEAM_COLORS = { 158: '#12284b', 138: '#a23b46', 134: '#c08a2e', 112: '#4e72a8', 113: '#6f9e6a' }
 
 // Brewers logo is referenced from MLB's official CDN, not redrawn.
 // A team mark on a sponsored surface can imply endorsement — set false for a colors-only header

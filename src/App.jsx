@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, lazy, Suspense } from 'react'
 import { theme } from './theme.js'
 import { SPONSORS, SPONSOR_DISCLAIMER } from './config.js'
 import { fetchDivisionStandings, fetchDivisionSchedules, fetchLeagueRanks } from './api.js'
-import { recentForm, lastFinalGame } from './games.js'
+import { lastFinalGame } from './games.js'
 import { initAnalytics } from './analytics.js'
 import Masthead from './components/Masthead.jsx'
 import BrewersBanner from './components/BrewersBanner.jsx'
@@ -61,7 +61,6 @@ export default function App() {
     return () => { clearInterval(id); document.removeEventListener('visibilitychange', onVisible) }
   }, [load])
 
-  const form = schedules ? recentForm(schedules) : null
   const lastGame = schedules ? lastFinalGame(schedules) : null
 
   return (
@@ -72,7 +71,7 @@ export default function App() {
         <UpdatedStamp at={updatedAt} />
         <GameHero />
         <Section kicker="Season pulse" title="Where things stand"><Pulse standings={standings} lastGame={lastGame} ranks={ranks} /></Section>
-        <Section kicker="NL Central" title="The standings"><Standings standings={standings} form={form} /></Section>
+        <Section kicker="NL Central" title="The standings"><Standings standings={standings} /></Section>
         <Section kicker="The division race" title="NL Central, day by day" sponsor={SPONSORS.race} slot="race">
           <Suspense fallback={<Loading block />}><Race schedules={schedules} /></Suspense>
         </Section>
