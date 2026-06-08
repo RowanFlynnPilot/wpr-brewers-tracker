@@ -55,11 +55,12 @@ export default function ThisDay() {
 
   const top = items[0]
   const hit = top.won ? winningHitSentence(detail) : null
+  const recordClause = top.record ? `, ${top.won ? 'improving to' : 'dropping to'} ${top.record.wins}–${top.record.losses}` : ''
 
   return (
     <div style={{ border: `1px solid ${theme.rule}`, borderLeft: `3px solid ${theme.gold}`, borderRadius: 8, background: theme.wash, padding: '20px 22px' }}>
       <div style={{ fontFamily: theme.serif, fontSize: 21, color: theme.ink, lineHeight: 1.4, maxWidth: 660 }}>
-        On this day in {top.year}, {top.text}
+        On this day in {top.year}, {top.text}{recordClause}.
       </div>
       {hit && (
         <div style={{ fontFamily: theme.serif, fontStyle: 'italic', fontSize: 15, color: theme.muted, lineHeight: 1.5, marginTop: 8, maxWidth: 660 }}>

@@ -85,17 +85,21 @@ export function rankThisDay(games) {
     const lastInning = innings[innings.length - 1]
     const walkoff = home && won && (lastInning?.home?.runs || 0) > 0 && mePrev <= oppPrev
 
-    let rank, category, text
-    if (won && oppHits === 0) { rank = 7; category = 'no-hitter'; text = `the Brewers no-hit the ${oppName}, ${me}–${opp}.` }
-    else if (walkoff) { rank = 6; category = 'walk-off'; text = `the Brewers walked off the ${oppName}, ${me}–${opp}${extra ? `, in ${ls.currentInning} innings` : ''}.` }
-    else if (won && maxDef >= 3) { rank = 5; category = 'comeback'; text = `the Brewers rallied from ${maxDef} runs down to beat the ${oppName}, ${me}–${opp}.` }
-    else if (won && extra) { rank = 4; category = 'extra innings'; text = `the Brewers outlasted the ${oppName} in ${ls.currentInning} innings, ${me}–${opp}.` }
-    else if (won && opp === 0) { rank = 3; category = 'shutout'; text = `the Brewers shut out the ${oppName}, ${me}–${opp}.` }
-    else if (won && margin >= 7) { rank = 3; category = 'blowout'; text = `the Brewers routed the ${oppName}, ${me}–${opp}.` }
-    else if (won) { rank = 1; category = 'win'; text = `the Brewers beat the ${oppName}, ${me}–${opp}.` }
-    else { rank = 0; category = 'loss'; text = `the Brewers fell to the ${oppName}, ${opp}–${me}.` }
+    const lr = game.teams[meSide]?.leagueRecord
+    const record = lr && lr.wins != null ? { wins: lr.wins, losses: lr.losses } : null
 
-    return { year, gamePk: game.gamePk, me, opp, oppName, won, rank, category, margin, maxDef, text }
+    // Result clauses have no trailing period — the component appends the record + period.
+    let rank, category, text
+    if (won && oppHits === 0) { rank = 7; category = 'no-hitter'; text = `the Brewers no-hit the ${oppName}, ${me}–${opp}` }
+    else if (walkoff) { rank = 6; category = 'walk-off'; text = `the Brewers walked off the ${oppName}, ${me}–${opp}${extra ? `, in ${ls.currentInning} innings` : ''}` }
+    else if (won && maxDef >= 3) { rank = 5; category = 'comeback'; text = `the Brewers rallied from ${maxDef} runs down to beat the ${oppName}, ${me}–${opp}` }
+    else if (won && extra) { rank = 4; category = 'extra innings'; text = `the Brewers outlasted the ${oppName} in ${ls.currentInning} innings, ${me}–${opp}` }
+    else if (won && opp === 0) { rank = 3; category = 'shutout'; text = `the Brewers shut out the ${oppName}, ${me}–${opp}` }
+    else if (won && margin >= 7) { rank = 3; category = 'blowout'; text = `the Brewers routed the ${oppName}, ${me}–${opp}` }
+    else if (won) { rank = 1; category = 'win'; text = `the Brewers beat the ${oppName}, ${me}–${opp}` }
+    else { rank = 0; category = 'loss'; text = `the Brewers fell to the ${oppName}, ${opp}–${me}` }
+
+    return { year, gamePk: game.gamePk, me, opp, oppName, won, rank, category, margin, maxDef, text, record }
   })
   scored.sort((a, b) => b.rank - a.rank || b.maxDef - a.maxDef || b.margin - a.margin || b.year - a.year)
   return scored
