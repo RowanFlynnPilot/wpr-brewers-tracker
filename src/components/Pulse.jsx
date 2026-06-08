@@ -39,12 +39,11 @@ export default function Pulse({ standings, lastGame, ranks }) {
       : `Their record matches run differential to the win (${rec(xToDate)}).`) +
       (xSeason ? ` At this rate they're on a ${xSeason.wins}-win pace.` : '')
 
-  // Marquee stats — natural width, grouped left so the row reads tight rather than stretched.
-  // Run diff / streak / lead are color-coded (navy good, red bad) for an at-a-glance read.
+  // Marquee stats — boxed stat tiles. Run diff / streak / lead are color-coded (navy good, red bad).
   const cell = (value, label, color = theme.ink) => (
-    <div style={{ minWidth: 74 }}>
-      <div style={{ fontFamily: theme.serif, fontSize: narrow ? 30 : 36, color, lineHeight: 1 }}>{value}</div>
-      <div style={{ fontFamily: theme.sans, fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: theme.muted, marginTop: 6 }}>{label}</div>
+    <div style={{ flex: '1 1 120px', minWidth: 104, border: `1px solid ${theme.rule}`, borderRadius: 8, padding: narrow ? '12px 13px' : '14px 16px' }}>
+      <div style={{ fontFamily: theme.serif, fontSize: narrow ? 28 : 34, color, lineHeight: 1 }}>{value}</div>
+      <div style={{ fontFamily: theme.sans, fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: theme.muted, marginTop: 8 }}>{label}</div>
     </div>
   )
   const rd = me.runDifferential
@@ -63,7 +62,7 @@ export default function Pulse({ standings, lastGame, ranks }) {
 
   return (
     <div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: narrow ? '20px 22px' : '24px 34px' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
         {cell(rec(me), 'Record')}
         {cell(rank === 1 ? `+${lead}` : `${lead}`, rank === 1 ? 'NL Central lead' : 'Games back', leadColor)}
         {cell(`${rd > 0 ? '+' : ''}${rd}`, 'Run diff', rdColor)}
@@ -72,11 +71,11 @@ export default function Pulse({ standings, lastGame, ranks }) {
       </div>
 
       {minis.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 18 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9, marginTop: 18 }}>
           {minis.map(([v, k]) => (
-            <span key={k} style={{ display: 'inline-flex', alignItems: 'baseline', gap: 6, background: '#fff', border: `1px solid ${theme.rule}`, borderLeft: `2px solid ${theme.gold}`, borderRadius: 4, padding: '5px 11px', fontFamily: theme.sans, fontSize: 12.5, whiteSpace: 'nowrap' }}>
-              <span style={{ color: theme.navy, fontWeight: 700 }}>{v}</span>
-              <span style={{ color: theme.muted }}>{k}</span>
+            <span key={k} style={{ display: 'inline-flex', borderRadius: 5, overflow: 'hidden', border: `1px solid ${theme.navy}`, fontFamily: theme.sans, fontSize: 12, whiteSpace: 'nowrap' }}>
+              <span style={{ background: theme.navy, color: '#fff', fontWeight: 700, padding: '3px 9px' }}>{v}</span>
+              <span style={{ background: '#fff', color: theme.ink, padding: '3px 9px' }}>{k}</span>
             </span>
           ))}
         </div>
