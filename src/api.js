@@ -119,6 +119,22 @@ export async function fetchThisDayGames(month, day, fromYear, toYear) {
   return games
 }
 
+// The go-ahead (game-winning) hit of a game, from play-by-play: the scoring play after which the
+// winner took a lead they never gave back. Returns { batter, description } or null if unavailable
+// (older games may lack play-by-play). One request, fetched only for the featured "this day" game.
+export async function fetchDecisivePlay(gamePk) {
+  const data = await getJSON(`/game/${gamePk}/playByPlay`)
+  const scoring = (data.allPlays || []).filter((p) => p.about?.isScoringPlay && p.result)
+  if (!scoring.length) return null
+  const last = scoring[scoring.length - 1].result
+  const homeWon = last.homeScore > last.awayScore
+  const winScore = (r) => (homeWon ? r.homeScore : r.awayScore)
+  const loseScore = (r) => (homeWon ? r.awayScore : r.homeScore)
+  let decisive = scoring.find((p, i) => winScore(p.result) > loseScore(p.result) && scoring.slice(i).every((q) => winScore(q.result) > loseScore(q.result)))
+  decisive = decisive || scoring[scoring.length - 1]
+  return { batter: decisive.matchup?.batter?.fullName || null, description: decisive.result?.description || null }
+}
+
 // Active roster with season stats hydrated in a single call.
 export async function fetchRosterStats() {
   const data = await getJSON(`/teams/${TEAM_ID}/roster?rosterType=active&hydrate=person(stats(type=season,season=${SEASON}))`)

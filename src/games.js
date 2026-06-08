@@ -61,17 +61,17 @@ export function rankThisDay(games) {
     const lastInning = innings[innings.length - 1]
     const walkoff = home && won && (lastInning?.home?.runs || 0) > 0 && mePrev <= oppPrev
 
-    let rank, text
-    if (won && oppHits === 0) { rank = 7; text = `No-hit the ${oppName}, ${me}–${opp}.` }
-    else if (walkoff) { rank = 6; text = `Walked off the ${oppName} ${me}–${opp}${extra ? ` in ${ls.currentInning} innings` : ''}.` }
-    else if (won && maxDef >= 3) { rank = 5; text = `Rallied from ${maxDef} runs down to beat the ${oppName} ${me}–${opp}.` }
-    else if (won && extra) { rank = 4; text = `Outlasted the ${oppName} ${me}–${opp} in ${ls.currentInning} innings.` }
-    else if (won && opp === 0) { rank = 3; text = `Blanked the ${oppName} ${me}–${opp}.` }
-    else if (won && margin >= 7) { rank = 3; text = `Routed the ${oppName} ${me}–${opp}.` }
-    else if (won) { rank = 1; text = `Beat the ${oppName} ${me}–${opp}.` }
-    else { rank = 0; text = `Fell to the ${oppName} ${opp}–${me}.` }
+    let rank, category, text
+    if (won && oppHits === 0) { rank = 7; category = 'no-hitter'; text = `No-hit the ${oppName}, ${me}–${opp}.` }
+    else if (walkoff) { rank = 6; category = 'walk-off'; text = `Walked off the ${oppName} ${me}–${opp}${extra ? ` in ${ls.currentInning} innings` : ''}.` }
+    else if (won && maxDef >= 3) { rank = 5; category = 'comeback'; text = `Rallied from ${maxDef} runs down to beat the ${oppName} ${me}–${opp}.` }
+    else if (won && extra) { rank = 4; category = 'extra innings'; text = `Outlasted the ${oppName} ${me}–${opp} in ${ls.currentInning} innings.` }
+    else if (won && opp === 0) { rank = 3; category = 'shutout'; text = `Blanked the ${oppName} ${me}–${opp}.` }
+    else if (won && margin >= 7) { rank = 3; category = 'blowout'; text = `Routed the ${oppName} ${me}–${opp}.` }
+    else if (won) { rank = 1; category = 'win'; text = `Beat the ${oppName} ${me}–${opp}.` }
+    else { rank = 0; category = 'loss'; text = `Fell to the ${oppName} ${opp}–${me}.` }
 
-    return { year, me, opp, oppName, won, rank, margin, maxDef, text }
+    return { year, gamePk: game.gamePk, me, opp, oppName, won, rank, category, margin, maxDef, text }
   })
   scored.sort((a, b) => b.rank - a.rank || b.maxDef - a.maxDef || b.margin - a.margin || b.year - a.year)
   return scored
