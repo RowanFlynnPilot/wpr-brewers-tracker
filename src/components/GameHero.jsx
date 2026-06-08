@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { theme } from '../theme.js'
 import { TEAM_ID, SPONSORS } from '../config.js'
 import { fetchFeaturedGame, fetchLiveExtras } from '../api.js'
@@ -34,6 +34,20 @@ export default function GameHero() {
   const [extras, setExtras] = useState(null)
   const narrow = useIsNarrow()
 
+  // Opt-in game alert. Notifications only work on the standalone page (cross-origin iframes block
+  // them), and — without a push backend — only fire while this tab/app is open. Honest + feature-gated.
+  const canAlert = typeof window !== 'undefined' && 'Notification' in window && window.self === window.top
+  const [alertsOn, setAlertsOn] = useState(() => {
+    try { return localStorage.getItem('brewersAlerts') === '1' } catch { return false }
+  })
+  const wasLive = useRef(false)
+  const toggleAlerts = () => {
+    const persist = (v) => { try { localStorage.setItem('brewersAlerts', v ? '1' : '0') } catch {} }
+    if (alertsOn) { setAlertsOn(false); persist(false); return }
+    if (Notification.permission === 'granted') { setAlertsOn(true); persist(true); return }
+    Notification.requestPermission().then((p) => { if (p === 'granted') { setAlertsOn(true); persist(true) } })
+  }
+
   const load = useCallback(() => {
     fetchFeaturedGame().then((g) => { setGame(g); setError(false) }).catch(() => setError(true))
   }, [])
@@ -60,6 +74,16 @@ export default function GameHero() {
     document.addEventListener('visibilitychange', refresh)
     return () => { clearInterval(id); document.removeEventListener('visibilitychange', refresh) }
   }, [live, gamePk, load])
+
+  // Fire an alert once when the featured game flips to live (only if opted in + permitted).
+  useEffect(() => {
+    if (game && live && !wasLive.current && alertsOn && canAlert && Notification.permission === 'granted') {
+      const h = game.teams.home.team.id === TEAM_ID
+      const opp = (h ? game.teams.away : game.teams.home).team.name.replace('Milwaukee ', '')
+      try { new Notification('Brewers game is underway', { body: `${h ? 'vs' : '@'} ${opp}`, icon: `${import.meta.env.BASE_URL}icon.svg` }) } catch {}
+    }
+    wasLive.current = live
+  }, [live, alertsOn, canAlert, game])
 
   if (error || !game) return null
 
@@ -196,6 +220,15 @@ export default function GameHero() {
       <div style={{ display: 'flex', justifyContent: 'center' }}>
         <Sponsor sponsor={SPONSORS.header} variant="light" compact slot="hero" />
       </div>
+
+      {/* Opt-in game alert (standalone app only) */}
+      {canAlert && (
+        <div style={{ marginTop: 12 }}>
+          <button onClick={toggleAlerts} className="link-hover" style={{ cursor: 'pointer', background: 'transparent', border: 'none', fontFamily: theme.sans, fontSize: 11, letterSpacing: '0.04em', color: alertsOn ? theme.navy : theme.muted, fontWeight: alertsOn ? 700 : 400 }}>
+            {alertsOn ? 'Game alerts on (while this tab is open)' : 'Alert me at game time'}
+          </button>
+        </div>
+      )}
     </div>
   )
 }

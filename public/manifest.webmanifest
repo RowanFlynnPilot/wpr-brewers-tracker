@@ -1,0 +1,14 @@
+{
+  "name": "Brewers, by the numbers — Wausau Pilot & Review",
+  "short_name": "Brewers",
+  "description": "Live Milwaukee Brewers stats from Wausau Pilot & Review — standings, the division race, schedule, and team leaders.",
+  "start_url": "/wpr-brewers-tracker/",
+  "scope": "/wpr-brewers-tracker/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#12284b",
+  "icons": [
+    { "src": "/wpr-brewers-tracker/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
