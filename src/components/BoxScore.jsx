@@ -9,6 +9,18 @@ const head = { padding: '5px 7px', textAlign: 'right', fontFamily: theme.sans, f
 const headL = { ...head, textAlign: 'left' }
 const SIDES = ['away', 'home']
 
+// Pull a W/L/S decision out of a pitcher's box-score note, e.g. "(W, 3-1)" or "(L, 0-2)(BS, 2)".
+function decision(note) {
+  const m = note && note.match(/\((W|L|S), ([^)]+)\)/)
+  if (!m) return null
+  const color = m[1] === 'W' ? theme.navy : m[1] === 'L' ? theme.red : theme.gold
+  return (
+    <span style={{ marginLeft: 6, color, fontWeight: 700, fontSize: 11 }}>
+      {m[1]}<span style={{ color: theme.muted, fontWeight: 400 }}> ({m[2]})</span>
+    </span>
+  )
+}
+
 // Box-score modal for a completed (or in-progress) game. Fetches its own feed; fail-soft.
 export default function BoxScore({ gamePk, dateLabel, onClose }) {
   const [data, setData] = useState(null)
@@ -104,7 +116,7 @@ export default function BoxScore({ gamePk, dateLabel, onClose }) {
             const s = p.stats.pitching
             return (
               <tr key={p.person.id}>
-                <td style={cellL}>{p.person.fullName}</td>
+                <td style={cellL}>{p.person.fullName}{decision(s.note)}</td>
                 <td style={cellR}>{s.inningsPitched}</td><td style={cellR}>{s.hits}</td><td style={cellR}>{s.runs}</td><td style={cellR}>{s.earnedRuns}</td><td style={cellR}>{s.baseOnBalls}</td><td style={cellR}>{s.strikeOuts}</td>
                 <td style={{ ...cellR, color: theme.muted }}>{p.seasonStats?.pitching?.era ?? ''}</td>
               </tr>
