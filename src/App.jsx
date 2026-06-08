@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, lazy, Suspense } from 'react'
 import { theme } from './theme.js'
 import { SPONSOR_DISCLAIMER } from './config.js'
-import { fetchDivisionStandings, fetchDivisionSchedules, fetchLeagueRanks } from './api.js'
+import { fetchDivisionStandings, fetchDivisionSchedules, fetchLeagueRanks, fetchRosterStats } from './api.js'
 import { lastFinalGame } from './games.js'
 import { initAnalytics } from './analytics.js'
 import Masthead from './components/Masthead.jsx'
@@ -13,6 +13,7 @@ import Standings from './components/Standings.jsx'
 import Schedule from './components/Schedule.jsx'
 import Players from './components/Players.jsx'
 import ThisDay from './components/ThisDay.jsx'
+import MilestoneWatch, { milestoneWatch } from './components/MilestoneWatch.jsx'
 import { Loading } from './components/Status.jsx'
 
 // Recharts is the heaviest dependency — load the race chart in its own chunk.
@@ -42,6 +43,7 @@ export default function App() {
   const [standings, setStandings] = useState(null)
   const [schedules, setSchedules] = useState(null)
   const [ranks, setRanks] = useState(null)
+  const [roster, setRoster] = useState(null)
   const [updatedAt, setUpdatedAt] = useState(null)
 
   // Refresh on a gentle interval (and on tab focus) so the whole page — not just the hero — stays live.
@@ -50,6 +52,7 @@ export default function App() {
     fetchDivisionStandings().then((s) => { setStandings(s); setUpdatedAt(Date.now()) }).catch(() => {})
     fetchDivisionSchedules().then(setSchedules).catch(() => {})
     fetchLeagueRanks().then(setRanks).catch(() => {})
+    fetchRosterStats().then(setRoster).catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -62,6 +65,7 @@ export default function App() {
   }, [load])
 
   const lastGame = schedules ? lastFinalGame(schedules) : null
+  const milestones = roster ? milestoneWatch(roster) : []
 
   return (
     <div style={{ background: theme.paper, color: theme.ink, minHeight: '100vh' }}>
@@ -71,13 +75,14 @@ export default function App() {
         <UpdatedStamp at={updatedAt} />
         <GameHero />
         <Section kicker="Season pulse" title="Where things stand"><Pulse standings={standings} lastGame={lastGame} ranks={ranks} /></Section>
+        {milestones.length > 0 && <Section kicker="On the verge" title="Milestone watch"><MilestoneWatch items={milestones} /></Section>}
         <Section kicker="NL Central" title="The standings"><Standings standings={standings} /></Section>
         <Section kicker="The division race" title="NL Central, day by day">
           <Suspense fallback={<Loading block />}><Race schedules={schedules} /></Suspense>
         </Section>
         <Section kicker="Recent & upcoming" title="The schedule"><Schedule /></Section>
         <Section kicker="From the vault" title="This day in Brewers history"><ThisDay /></Section>
-        <Section kicker="At the plate & on the mound" title="Team leaders"><Players /></Section>
+        <Section kicker="At the plate & on the mound" title="Team leaders"><Players roster={roster} /></Section>
 
         <footer style={{ borderTop: `1px solid ${theme.rule}`, padding: '22px 0 44px', fontFamily: theme.sans, fontSize: 11, color: theme.muted, lineHeight: 1.6 }}>
           Data via the MLB Stats API · refreshes live. Not affiliated with or endorsed by Major League Baseball or the Milwaukee Brewers.<br />

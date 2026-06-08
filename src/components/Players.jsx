@@ -1,8 +1,6 @@
-import { useEffect, useState } from 'react'
 import { theme } from '../theme.js'
 import { headshot } from '../config.js'
-import { fetchRosterStats } from '../api.js'
-import { Loading, ErrorState } from './Status.jsx'
+import { Loading } from './Status.jsx'
 
 const th = { fontFamily: theme.sans, fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', color: theme.muted, textAlign: 'right', padding: '6px 8px', fontWeight: 700 }
 const td = { fontFamily: theme.sans, fontSize: 13, color: theme.ink, textAlign: 'right', padding: '8px', borderTop: `1px solid ${theme.rule}` }
@@ -78,16 +76,9 @@ function buildLeaders(roster) {
   return { hitters: hitters.slice(0, 8), pitchers: pitchers.slice(0, 8) }
 }
 
-export default function Players() {
-  const [leaders, setLeaders] = useState(null)
-  const [error, setError] = useState(false)
-
-  useEffect(() => {
-    fetchRosterStats().then((roster) => setLeaders(buildLeaders(roster))).catch(() => setError(true))
-  }, [])
-
-  if (error) return <ErrorState />
-  if (!leaders) return <Loading />
+export default function Players({ roster }) {
+  if (!roster) return <Loading />
+  const leaders = buildLeaders(roster)
 
   return (
     <div>
