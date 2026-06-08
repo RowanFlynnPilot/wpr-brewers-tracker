@@ -72,10 +72,11 @@ export default function Pulse({ standings, lastGame, ranks }) {
       </div>
 
       {minis.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 18 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 18 }}>
           {minis.map(([v, k]) => (
-            <span key={k} style={{ background: theme.wash, borderRadius: 20, padding: '4px 11px', fontFamily: theme.sans, fontSize: 12.5, whiteSpace: 'nowrap' }}>
-              <span style={{ color: theme.ink, fontWeight: 700 }}>{v}</span> <span style={{ color: theme.muted }}>{k}</span>
+            <span key={k} style={{ display: 'inline-flex', alignItems: 'baseline', gap: 6, background: '#fff', border: `1px solid ${theme.rule}`, borderLeft: `2px solid ${theme.gold}`, borderRadius: 4, padding: '5px 11px', fontFamily: theme.sans, fontSize: 12.5, whiteSpace: 'nowrap' }}>
+              <span style={{ color: theme.navy, fontWeight: 700 }}>{v}</span>
+              <span style={{ color: theme.muted }}>{k}</span>
             </span>
           ))}
         </div>
