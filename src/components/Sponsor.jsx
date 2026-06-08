@@ -51,6 +51,9 @@ export default function Sponsor({ sponsor, variant = 'light', compact = false, s
     )
   }
 
+  // Full lockup — a white card that pops on the navy banner (and reads cleanly on paper), with a
+  // gold top-accent, a prominent logo, and a click cue. The logo art is on white, so a white card
+  // frames it naturally.
   const Box = sponsor.url ? 'a' : 'div'
 
   return (
@@ -58,21 +61,25 @@ export default function Sponsor({ sponsor, variant = 'light', compact = false, s
       {...linkProps}
       className={sponsor.url ? 'link-hover' : undefined}
       style={{
-        display: 'inline-block', textAlign: 'right', textDecoration: 'none',
-        border: `1px solid ${border}`, borderRadius: 4, padding: '8px 12px', maxWidth: 240,
+        display: 'inline-block', textAlign: 'left', textDecoration: 'none',
+        background: '#fff', border: `1px solid ${theme.rule}`, borderTop: `3px solid ${theme.gold}`,
+        borderRadius: 8, padding: '12px 16px 13px', maxWidth: 300,
+        boxShadow: dark ? '0 6px 20px rgba(0,0,0,0.25)' : '0 2px 8px rgba(0,0,0,0.06)',
       }}
     >
-      {label('Presented by')}
+      <div style={{ fontFamily: theme.sans, fontSize: 9.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: theme.gold, fontWeight: 700 }}>Presented by</div>
       {sponsor.logo ? (
-        // White card behind the logo so a solid-background mark reads cleanly on navy or paper.
-        <span style={{ display: 'inline-block', background: '#fff', borderRadius: 3, padding: '5px 7px', marginTop: 4 }}>
-          <img src={sponsor.logo} alt={sponsor.name} style={{ display: 'block', height: 30, objectFit: 'contain' }} />
-        </span>
+        <img src={sponsor.logo} alt={sponsor.name} style={{ display: 'block', height: 50, objectFit: 'contain', margin: '8px 0 2px' }} />
       ) : (
-        <div style={{ fontFamily: theme.serif, fontSize: 15, color: nameColor, marginTop: 2 }}>{sponsor.name}</div>
+        <div style={{ fontFamily: theme.serif, fontSize: 20, color: theme.ink, margin: '6px 0 2px' }}>{sponsor.name}</div>
       )}
       {sponsor.tagline && (
-        <div style={{ fontFamily: theme.sans, fontSize: 10, color: labelColor, marginTop: 5, lineHeight: 1.4 }}>{sponsor.tagline}</div>
+        <div style={{ fontFamily: theme.sans, fontSize: 11, color: theme.muted, marginTop: 4, lineHeight: 1.4 }}>{sponsor.tagline}</div>
+      )}
+      {sponsor.url && (
+        <div style={{ fontFamily: theme.sans, fontSize: 11.5, fontWeight: 700, color: theme.navy, marginTop: 9 }}>
+          Plan your visit <span aria-hidden="true">→</span>
+        </div>
       )}
     </Box>
   )
