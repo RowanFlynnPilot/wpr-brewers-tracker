@@ -23,6 +23,7 @@ export const headshot = (personId) => `https://midfield.mlbstatic.com/v1/people/
 // WPR brand assets (the publication's own logo).
 export const WPR_LOGO = 'https://wausaupilotandreview.com/wp-content/uploads/2024/04/WausauPilotandReviewLogo.png'
 export const WPR_TAGLINE = 'Where Locals Look First For News'
+export const WPR_URL = 'https://wausaupilotandreview.com/'
 
 // Sellable sponsor surfaces. One title slot (the navy banner) plus two inline section slots.
 // A slot is either a sponsor object or null (renders as an "available" upsell card).

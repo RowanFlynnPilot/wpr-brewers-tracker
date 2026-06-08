@@ -8,6 +8,7 @@ export const theme = {
   navy: '#12284b',
   gold: '#c8a23a',
   red: '#9b2226',
+  slate: '#32373c', // Wausau Pilot & Review's masthead text/rule color
   serif: "'Fraunces', Georgia, 'Times New Roman', serif",
   sans: "'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
 }

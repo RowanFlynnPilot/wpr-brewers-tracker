@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, lazy, Suspense } from 'react'
 import { theme } from './theme.js'
-import { SPONSORS, SPONSOR_DISCLAIMER } from './config.js'
+import { SPONSOR_DISCLAIMER } from './config.js'
 import { fetchDivisionStandings, fetchDivisionSchedules, fetchLeagueRanks } from './api.js'
 import { lastFinalGame } from './games.js'
 import { initAnalytics } from './analytics.js'
@@ -72,12 +72,12 @@ export default function App() {
         <GameHero />
         <Section kicker="Season pulse" title="Where things stand"><Pulse standings={standings} lastGame={lastGame} ranks={ranks} /></Section>
         <Section kicker="NL Central" title="The standings"><Standings standings={standings} /></Section>
-        <Section kicker="The division race" title="NL Central, day by day" sponsor={SPONSORS.race} slot="race">
+        <Section kicker="The division race" title="NL Central, day by day">
           <Suspense fallback={<Loading block />}><Race schedules={schedules} /></Suspense>
         </Section>
         <Section kicker="Recent & upcoming" title="The schedule"><Schedule /></Section>
         <Section kicker="From the vault" title="This day in Brewers history"><ThisDay /></Section>
-        <Section kicker="At the plate & on the mound" title="Team leaders" sponsor={SPONSORS.leaders} slot="leaders"><Players /></Section>
+        <Section kicker="At the plate & on the mound" title="Team leaders"><Players /></Section>
 
         <footer style={{ borderTop: `1px solid ${theme.rule}`, padding: '22px 0 44px', fontFamily: theme.sans, fontSize: 11, color: theme.muted, lineHeight: 1.6 }}>
           Data via the MLB Stats API · refreshes live. Not affiliated with or endorsed by Major League Baseball or the Milwaukee Brewers.<br />
