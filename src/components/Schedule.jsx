@@ -5,10 +5,12 @@ import { fetchTeamSchedule } from '../api.js'
 import { Loading, ErrorState } from './Status.jsx'
 import TeamLogo from './TeamLogo.jsx'
 import PitcherLine from './PitcherLine.jsx'
+import BoxScore from './BoxScore.jsx'
 
 export default function Schedule() {
   const [games, setGames] = useState(null)
   const [error, setError] = useState(false)
+  const [openGame, setOpenGame] = useState(null) // { gamePk, label } for the box-score modal
 
   useEffect(() => {
     fetchTeamSchedule().then(setGames).catch(() => setError(true))
@@ -30,8 +32,18 @@ export default function Schedule() {
         const probable = game.teams[home ? 'home' : 'away'].probablePitcher
         const won = final && myScore > oppScore
         const label = new Date(date + 'T12:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+        const openable = final || live
+        const open = () => openable && setOpenGame({ gamePk: game.gamePk, label })
         return (
-          <div key={i} className="card-hover" style={{ border: `1px solid ${theme.rule}`, borderRadius: 6, padding: 12, background: live ? '#fff8e6' : theme.paper }}>
+          <div
+            key={i}
+            className="card-hover"
+            onClick={open}
+            onKeyDown={(e) => { if (openable && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); open() } }}
+            role={openable ? 'button' : undefined}
+            tabIndex={openable ? 0 : undefined}
+            style={{ border: `1px solid ${theme.rule}`, borderRadius: 6, padding: 12, background: live ? '#fff8e6' : theme.paper, cursor: openable ? 'pointer' : 'default' }}
+          >
             <div style={{ fontFamily: theme.sans, fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: live ? theme.gold : theme.muted }}>
               {label}{live && ' \u2022 LIVE'}
             </div>
@@ -40,9 +52,12 @@ export default function Schedule() {
               <span style={{ fontFamily: theme.serif, fontSize: 18, color: theme.ink }}>{home ? 'vs' : '@'} {opponent}</span>
             </div>
             {final || live ? (
-              <div style={{ fontFamily: theme.serif, fontSize: 20, marginTop: 3, color: won ? theme.navy : theme.ink }}>
-                {won ? 'W' : final ? 'L' : ''} {myScore}{'\u2013'}{oppScore}
-              </div>
+              <>
+                <div style={{ fontFamily: theme.serif, fontSize: 20, marginTop: 3, color: won ? theme.navy : theme.ink }}>
+                  {won ? 'W' : final ? 'L' : ''} {myScore}{'\u2013'}{oppScore}
+                </div>
+                <div style={{ fontFamily: theme.sans, fontSize: 11, fontWeight: 700, color: theme.gold, marginTop: 6 }}>Box score \u2192</div>
+              </>
             ) : probable ? (
               <PitcherLine personId={probable.id} fullName={probable.fullName} />
             ) : (
@@ -51,6 +66,7 @@ export default function Schedule() {
           </div>
         )
       })}
+      {openGame && <BoxScore gamePk={openGame.gamePk} dateLabel={openGame.label} onClose={() => setOpenGame(null)} />}
     </div>
   )
 }

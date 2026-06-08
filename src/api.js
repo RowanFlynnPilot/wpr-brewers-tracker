@@ -135,6 +135,16 @@ export async function fetchDecisivePlay(gamePk) {
   return { batter: decisive.matchup?.batter?.fullName || null, description: decisive.result?.description || null }
 }
 
+// Full box score for one game: player batting/pitching lines + the inning-by-inning linescore.
+// Fetched on demand when a schedule card is opened.
+export async function fetchGameBox(gamePk) {
+  const [box, line] = await Promise.all([
+    getJSON(`/game/${gamePk}/boxscore`),
+    getJSON(`/game/${gamePk}/linescore`),
+  ])
+  return { box, line }
+}
+
 // Active roster with season stats hydrated in a single call.
 export async function fetchRosterStats() {
   const data = await getJSON(`/teams/${TEAM_ID}/roster?rosterType=active&hydrate=person(stats(type=season,season=${SEASON}))`)
