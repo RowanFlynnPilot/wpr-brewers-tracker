@@ -6,6 +6,7 @@ import { Loading, ErrorState } from './Status.jsx'
 import TeamLogo from './TeamLogo.jsx'
 import PitcherLine from './PitcherLine.jsx'
 import BoxScore from './BoxScore.jsx'
+import CalendarButton from './CalendarButton.jsx'
 
 export default function Schedule() {
   const [games, setGames] = useState(null)
@@ -20,8 +21,12 @@ export default function Schedule() {
   if (!games) return <Loading />
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: 10 }}>
-      {games.map(({ date, game }, i) => {
+    <>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+        <CalendarButton />
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: 10 }}>
+        {games.map(({ date, game }, i) => {
         const home = game.teams.home.team.id === TEAM_ID
         const oppTeam = home ? game.teams.away.team : game.teams.home.team
         const opponent = oppTeam.name.replace('Milwaukee ', '')
@@ -64,8 +69,9 @@ export default function Schedule() {
             )}
           </div>
         )
-      })}
+        })}
+      </div>
       {openGame && <BoxScore gamePk={openGame.gamePk} dateLabel={openGame.label} onClose={() => setOpenGame(null)} />}
-    </div>
+    </>
   )
 }

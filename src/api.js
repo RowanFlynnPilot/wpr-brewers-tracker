@@ -46,6 +46,12 @@ export async function fetchDivisionSchedules() {
   )
 }
 
+// The rest of the season's games (today → season end) for the calendar export. Fetched on demand.
+export async function fetchUpcomingSchedule() {
+  const data = await getJSON(`/schedule?sportId=1&teamId=${TEAM_ID}&startDate=${today()}&endDate=${SEASON}-10-01&hydrate=team,venue`)
+  return data.dates.flatMap((d) => d.games)
+}
+
 // Recent + upcoming games for the home team, with probable pitchers hydrated.
 export async function fetchTeamSchedule() {
   const t = new Date()
