@@ -14,7 +14,9 @@ function buildSeries(teams) {
     const series = []
     dates.forEach((day) => {
       day.games.forEach((g) => {
-        if (g.status.detailedState !== 'Final') return
+        // Regular-season finals only — exclude spring training ('S') and exhibition ('E') games,
+        // which would otherwise inflate records and skew games-back vs the official standings.
+        if (g.status.detailedState !== 'Final' || g.gameType !== 'R') return
         const home = g.teams.home.team.id === id
         const me = home ? g.teams.home : g.teams.away
         const opp = home ? g.teams.away : g.teams.home
@@ -36,13 +38,15 @@ function buildSeries(teams) {
     return last
   }
 
-  return [...dateSet].sort().map((date) => {
+  const rows = [...dateSet].sort().map((date) => {
     const recs = Object.keys(DIVISION).map((id) => ({ id: Number(id), ...recordAsOf(Number(id), date) }))
+    if (!recs.some((r) => r.w + r.l > 0)) return null // skip dates before any regular-season game
     const leader = recs.reduce((a, b) => (b.w / ((b.w + b.l) || 1) > a.w / ((a.w + a.l) || 1) ? b : a))
     const row = { date: date.slice(5) }
     recs.forEach((r) => { row[r.id] = gamesBack(leader.w, leader.l, r.w, r.l) })
     return row
-  }).filter((_, i, arr) => i % 4 === 0 || i === arr.length - 1) // thin for smoother lines; always keep the latest
+  }).filter(Boolean)
+  return rows.filter((_, i, arr) => i % 4 === 0 || i === arr.length - 1) // thin for smoother lines; always keep the latest
 }
 
 export default function Race({ schedules }) {
