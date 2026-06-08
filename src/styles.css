@@ -39,3 +39,22 @@ img { border: 0; }
   .card-hover { transition: none; }
   .card-hover:hover { transform: none; }
 }
+
+/* Schedule game cards */
+.game-card { border: 1px solid #e3ddd0; border-radius: 6px; padding: 12px; background: #fff; }
+.game-card.is-live { background: #fff8e6; }
+.game-card.is-open {
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+.game-card.is-open:hover {
+  border-color: #c8a23a;
+  background: #faf6ea;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 16px rgba(18, 40, 75, 0.10);
+}
+.game-card.is-open.is-live:hover { background: #fff2cc; }
+@media (prefers-reduced-motion: reduce) {
+  .game-card.is-open { transition: border-color 0.15s ease, background 0.15s ease; }
+  .game-card.is-open:hover { transform: none; }
+}

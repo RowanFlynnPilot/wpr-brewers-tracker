@@ -37,12 +37,11 @@ export default function Schedule() {
         return (
           <div
             key={i}
-            className="card-hover"
+            className={`game-card${live ? ' is-live' : ''}${openable ? ' is-open' : ''}`}
             onClick={open}
             onKeyDown={(e) => { if (openable && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); open() } }}
             role={openable ? 'button' : undefined}
             tabIndex={openable ? 0 : undefined}
-            style={{ border: `1px solid ${theme.rule}`, borderRadius: 6, padding: 12, background: live ? '#fff8e6' : theme.paper, cursor: openable ? 'pointer' : 'default' }}
           >
             <div style={{ fontFamily: theme.sans, fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: live ? theme.gold : theme.muted }}>
               {label}{live && ' \u2022 LIVE'}
@@ -56,7 +55,7 @@ export default function Schedule() {
                 <div style={{ fontFamily: theme.serif, fontSize: 20, marginTop: 3, color: won ? theme.navy : theme.ink }}>
                   {won ? 'W' : final ? 'L' : ''} {myScore}{'\u2013'}{oppScore}
                 </div>
-                <div style={{ fontFamily: theme.sans, fontSize: 11, fontWeight: 700, color: theme.gold, marginTop: 6 }}>Box score \u2192</div>
+                <div style={{ fontFamily: theme.sans, fontSize: 11, fontWeight: 700, color: theme.gold, marginTop: 6 }}>Box score {'\u2192'}</div>
               </>
             ) : probable ? (
               <PitcherLine personId={probable.id} fullName={probable.fullName} />
