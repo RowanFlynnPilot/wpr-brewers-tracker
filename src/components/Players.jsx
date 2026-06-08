@@ -40,7 +40,7 @@ function LeaderTable({ title, rows, columns }) {
         </thead>
         <tbody>
           {rows.map((r) => (
-            <tr key={r.id}>
+            <tr key={r.id} className="hover-row">
               <td style={{ ...td, textAlign: 'left' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <img src={headshot(r.id)} alt="" width={28} height={28} style={{ borderRadius: '50%', background: theme.wash, objectFit: 'cover' }} onError={(e) => { e.currentTarget.style.visibility = 'hidden' }} />

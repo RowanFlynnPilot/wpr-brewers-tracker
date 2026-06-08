@@ -7,6 +7,7 @@ export const TEAM_ID = 158          // Milwaukee Brewers
 
 // NL Central, used by the standings + division-race modules.
 export const DIVISION = { 158: 'Brewers', 138: 'Cardinals', 134: 'Pirates', 112: 'Cubs', 113: 'Reds' }
+export const TEAM_ABBR = { 158: 'MIL', 138: 'STL', 134: 'PIT', 112: 'CHC', 113: 'CIN' }
 
 // Line colors for the race chart. The home team is emphasized in the component, not here.
 // Calmer, distinct hues for the rivals so the navy Brewers line stays the focus.

@@ -1,6 +1,6 @@
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine, Legend } from 'recharts'
 import { theme } from '../theme.js'
-import { DIVISION, TEAM_COLORS, TEAM_ID } from '../config.js'
+import { DIVISION, TEAM_COLORS, TEAM_ABBR, TEAM_ID } from '../config.js'
 import { Loading } from './Status.jsx'
 
 const gamesBack = (lw, ll, w, l) => ((lw - w) + (l - ll)) / 2
@@ -61,7 +61,7 @@ export default function Race({ schedules }) {
             <XAxis dataKey="date" tick={{ fontFamily: theme.sans, fontSize: 10, fill: theme.muted }} interval={Math.ceil(data.length / 8)} stroke={theme.rule} />
             <YAxis reversed tick={{ fontFamily: theme.sans, fontSize: 10, fill: theme.muted }} stroke={theme.rule} />
             <ReferenceLine y={0} stroke={theme.ink} strokeWidth={1} />
-            <Tooltip contentStyle={{ fontFamily: theme.sans, fontSize: 12, border: `1px solid ${theme.rule}`, background: theme.paper }} formatter={(v, n) => [v === 0 ? 'leads' : `${v} GB`, DIVISION[n]]} />
+            <Tooltip contentStyle={{ fontFamily: theme.sans, fontSize: 12, border: `1px solid ${theme.rule}`, background: theme.paper }} formatter={(v, n, item) => [v === 0 ? 'leads' : `${v} GB`, TEAM_ABBR[item?.dataKey] || n]} />
             <Legend verticalAlign="bottom" iconType="plain" wrapperStyle={{ fontFamily: theme.sans, fontSize: 11, paddingTop: 8 }} />
             {/* Draw rivals first (muted), then the Brewers on top (bold navy). */}
             {Object.keys(DIVISION)

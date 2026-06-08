@@ -91,7 +91,7 @@ export default function BoxScore({ gamePk, dateLabel, onClose }) {
           {rows.map((p) => {
             const s = p.stats.batting
             return (
-              <tr key={p.person.id}>
+              <tr key={p.person.id} className="hover-row">
                 <td style={cellL}>{p.person.fullName} <span style={{ color: theme.muted, fontSize: 10 }}>{p.position?.abbreviation}</span></td>
                 <td style={cellR}>{s.atBats}</td><td style={cellR}>{s.runs}</td><td style={cellR}>{s.hits}</td><td style={cellR}>{s.rbi}</td><td style={cellR}>{s.baseOnBalls}</td><td style={cellR}>{s.strikeOuts}</td>
                 <td style={{ ...cellR, color: theme.muted }}>{p.seasonStats?.batting?.avg ?? ''}</td>
@@ -115,7 +115,7 @@ export default function BoxScore({ gamePk, dateLabel, onClose }) {
           {rows.map((p) => {
             const s = p.stats.pitching
             return (
-              <tr key={p.person.id}>
+              <tr key={p.person.id} className="hover-row">
                 <td style={cellL}>{p.person.fullName}{decision(s.note)}</td>
                 <td style={cellR}>{s.inningsPitched}</td><td style={cellR}>{s.hits}</td><td style={cellR}>{s.runs}</td><td style={cellR}>{s.earnedRuns}</td><td style={cellR}>{s.baseOnBalls}</td><td style={cellR}>{s.strikeOuts}</td>
                 <td style={{ ...cellR, color: theme.muted }}>{p.seasonStats?.pitching?.era ?? ''}</td>
