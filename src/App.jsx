@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, lazy, Suspense } from 'react'
 import { theme } from './theme.js'
-import { SPONSOR_DISCLAIMER } from './config.js'
+import { SPONSOR_DISCLAIMER, WATCH_PARTY } from './config.js'
 import { fetchDivisionStandings, fetchDivisionSchedules, fetchLeagueRanks, fetchRosterStats } from './api.js'
 import { lastFinalGame } from './games.js'
 import { initAnalytics } from './analytics.js'
@@ -13,6 +13,7 @@ import Standings from './components/Standings.jsx'
 import Schedule from './components/Schedule.jsx'
 import Players from './components/Players.jsx'
 import ThisDay from './components/ThisDay.jsx'
+import WhereToWatch from './components/WhereToWatch.jsx'
 import MilestoneWatch, { milestoneWatch } from './components/MilestoneWatch.jsx'
 import { Loading } from './components/Status.jsx'
 
@@ -81,6 +82,7 @@ export default function App() {
           <Suspense fallback={<Loading block />}><Race schedules={schedules} /></Suspense>
         </Section>
         <Section kicker="Recent & upcoming" title="The schedule"><Schedule /></Section>
+        {WATCH_PARTY && <Section kicker="Where to watch" title="Catch the games this week"><WhereToWatch venue={WATCH_PARTY} /></Section>}
         <Section kicker="From the vault" title="This day in Brewers history"><ThisDay /></Section>
         <Section kicker="At the plate & on the mound" title="Team leaders"><Players roster={roster} /></Section>
 

@@ -45,6 +45,23 @@ export const SPONSORS = {
 // Where to send sponsorship inquiries (shown on empty slots — the upsell).
 export const SPONSOR_INQUIRY = 'sales@wausaupilotandreview.com'
 
+// "Where to watch" — a sponsorable listing for a local bar/restaurant showing the games.
+// The venue provides the photo + details. Set to null to hide the whole section.
+// (This sample is a template — replace with the sponsoring venue, or set to null.)
+export const WATCH_PARTY = {
+  name: 'The Sample Tap House',                 // ← the sponsoring venue
+  tagline: "Wausau's home for Brewers baseball", // ← short pitch line
+  image: '',                                     // ← venue-provided photo URL ('' shows a placeholder)
+  url: 'https://wausaupilotandreview.com/',      // ← venue website / menu
+  address: 'Downtown Wausau',
+  features: ['12 HDTVs', 'Sound on for every Brewers game', 'Full bar & patio', 'Open for first pitch'],
+  specials: [
+    '$3 Wisconsin craft taps during every game',
+    '50-cent wings while the Brewers are batting',
+    'Half-price appetizers, 4 to 6 PM weekdays',
+  ],
+}
+
 // Shown in the footer when a gaming brand is the title sponsor. Editable; set to '' to hide.
 export const SPONSOR_DISCLAIMER =
   'Must be 21+. If you or someone you know has a gambling problem, call 1-800-GAMBLER.'
