@@ -1,9 +1,9 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { theme } from '../theme.js'
 import { TEAM_ID, TEAM_ACCENT, SPONSORS, SITE_URL, headshot } from '../config.js'
-import { fetchFeaturedGame, fetchPitcherSeason, fetchLiveExtras, fetchBoxscore } from '../api.js'
+import { fetchFeaturedGame, fetchPitcherSeason, fetchMiniLive, fetchBoxscore } from '../api.js'
 import { fetchFirstPitchForecast } from '../weather.js'
-import { playerOfTheGame } from '../games.js'
+import { playerOfTheGame, liveMatchupLines } from '../games.js'
 import { track } from '../analytics.js'
 import TeamLogo from './TeamLogo.jsx'
 
@@ -51,7 +51,7 @@ export default function MiniGame() {
   const [game, setGame] = useState(null)
   const [pitchers, setPitchers] = useState(null) // { me, opp } season pitching stats
   const [forecast, setForecast] = useState(null)
-  const [extras, setExtras] = useState(null) // win probability while live
+  const [extras, setExtras] = useState(null) // win probability + live box while in progress
   const [star, setStar] = useState(null) // player of the game after a final
   const [now, setNow] = useState(Date.now()) // drives the first-pitch countdown chip
   const [pop, setPop] = useState(false) // score-change animation trigger
@@ -65,13 +65,14 @@ export default function MiniGame() {
   const gamePk = game?.gamePk
   const live = state === 'Live'
 
-  // Poll the feed (fast while live, gently otherwise) + win probability during play.
+  // Poll the feed (fast while live, gently otherwise) + win probability and the live box
+  // (current batter/pitcher game lines) during play.
   useEffect(() => {
     if (!live) setExtras(null)
     const refresh = () => {
       if (document.hidden) return
       load()
-      if (live && gamePk) fetchLiveExtras(gamePk).then(setExtras).catch(() => {})
+      if (live && gamePk) fetchMiniLive(gamePk).then(setExtras).catch(() => {})
     }
     if (live) refresh(); else load()
     const id = setInterval(refresh, live ? REFRESH_MS : IDLE_REFRESH_MS)
@@ -201,6 +202,7 @@ export default function MiniGame() {
     ? `${pitcherLine(me.probablePitcher, pitchers?.me)} vs ${pitcherLine(opp.probablePitcher, pitchers?.opp)}`
     : null
   const mePct = live && extras?.homeWinPct != null ? Math.round(home ? extras.homeWinPct : extras.awayWinPct) : null
+  const matchup = live ? liveMatchupLines(extras?.box, ls.offense?.batter?.id, ls.defense?.pitcher?.id) : { batter: null, pitcher: null }
 
   const TeamCol = ({ team, name, bold }) => (
     <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 3, width: 92 }}>
@@ -246,6 +248,22 @@ export default function MiniGame() {
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 10, margin: '2px 0 4px' }}>
             <MiniBases offense={ls.offense} />
             <span style={{ fontSize: 11, color: theme.ink }}>{ls.balls ?? 0}-{ls.strikes ?? 0}</span>
+          </div>
+        )}
+        {(matchup.batter || matchup.pitcher) && (
+          <div style={{ fontSize: 10.5, lineHeight: 1.6, margin: '0 0 4px' }}>
+            {matchup.batter && (
+              <div>
+                <span style={{ color: theme.gold, fontWeight: 700, fontSize: 8.5, letterSpacing: '0.1em' }}>AT BAT</span>
+                <span style={{ color: theme.ink }}> {matchup.batter}</span>
+              </div>
+            )}
+            {matchup.pitcher && (
+              <div>
+                <span style={{ color: theme.gold, fontWeight: 700, fontSize: 8.5, letterSpacing: '0.1em' }}>PITCHING</span>
+                <span style={{ color: theme.ink }}> {matchup.pitcher}</span>
+              </div>
+            )}
           </div>
         )}
         {mePct != null && (

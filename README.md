@@ -56,7 +56,7 @@ tracker. Once the full tracker has a page on the news site, set that page's URL 
 
 ```html
 <iframe src="https://rowanflynnpilot.github.io/wpr-brewers-tracker/mini.html?to=https://wausaupilotandreview.com/YOUR-TRACKER-PAGE/"
-        style="width:100%;border:0;height:240px" loading="lazy"
+        style="width:100%;border:0;height:260px" loading="lazy"
         title="Brewers scoreboard — tap for the full tracker"></iframe>
 ```
 

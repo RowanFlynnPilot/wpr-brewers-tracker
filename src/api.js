@@ -163,6 +163,20 @@ export async function fetchGameBox(gamePk) {
   return { box, line }
 }
 
+// Live extras for the MINI scoreboard: win probability + the live box score (for the current
+// batter/pitcher game lines). Lighter than fetchLiveExtras — no play-by-play payload.
+export async function fetchMiniLive(gamePk) {
+  const [cm, box] = await Promise.all([
+    getJSON(`/game/${gamePk}/contextMetrics`).catch(() => ({})),
+    fetchBoxscore(gamePk).catch(() => null),
+  ])
+  return {
+    homeWinPct: typeof cm.homeWinProbability === 'number' ? cm.homeWinProbability : null,
+    awayWinPct: typeof cm.awayWinProbability === 'number' ? cm.awayWinProbability : null,
+    box,
+  }
+}
+
 // Live extras for the game hero: win probability + the most recent plays. Only fetched while a
 // game is in progress, on the hero's refresh cadence.
 export async function fetchLiveExtras(gamePk) {

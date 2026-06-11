@@ -72,6 +72,36 @@ export function playerOfTheGame(box) {
   return best
 }
 
+// In-game lines for the players currently at bat and on the mound, from a live box score:
+// { batter: 'A. Vaughn · 2-for-3, HR', pitcher: 'K. Harrison · 2.0 IP, 3 ER, 4 K' }.
+// Either side is null when the player can't be found (mid-substitution) or has no line yet.
+const shortName = (fullName) => {
+  const parts = fullName.split(' ')
+  return `${parts[0][0]}. ${parts.slice(1).join(' ')}`
+}
+export function liveMatchupLines(box, batterId, pitcherId) {
+  if (!box) return { batter: null, pitcher: null }
+  const find = (id) => {
+    if (!id) return null
+    return box.teams.home.players['ID' + id] || box.teams.away.players['ID' + id] || null
+  }
+  const b = find(batterId)
+  const bs = b?.stats?.batting
+  let batter = null
+  if (b && bs) {
+    const bits = bs.atBats > 0 ? [`${bs.hits}-for-${bs.atBats}`] : []
+    if (bs.homeRuns) bits.push(bs.homeRuns > 1 ? `${bs.homeRuns} HR` : 'HR')
+    if (bs.rbi) bits.push(`${bs.rbi} RBI`)
+    batter = bits.length ? `${shortName(b.person.fullName)} · ${bits.join(', ')}` : shortName(b.person.fullName)
+  }
+  const p = find(pitcherId)
+  const ps = p?.stats?.pitching
+  const pitcher = p && ps && ps.inningsPitched != null
+    ? `${shortName(p.person.fullName)} · ${ps.inningsPitched} IP, ${ps.earnedRuns} ER, ${ps.strikeOuts} K`
+    : null
+  return { batter, pitcher }
+}
+
 // Series framing over the team-schedule feed ({date, game} rows): short lines for the last
 // completed series and the one in progress, e.g. "Won 2 of 3 vs the Cubs" · "Up 1–0 on the
 // Athletics". Series whose first game falls outside the window are skipped (can't score them).
