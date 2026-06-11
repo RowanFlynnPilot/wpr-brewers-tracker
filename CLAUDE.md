@@ -87,7 +87,7 @@ Push to `main` → auto-deploys via `.github/workflows/deploy.yml`. Set Pages so
 
 ## Possible next features
 
-- Probable-pitcher stat line on schedule cards.
-- A "run differential vs. record" expected-wins note in the pulse.
-- Recent-form sparkline per standings row.
+(Pitcher stat lines, the expected-wins note, and the standings form strip have all shipped.)
+- Wild-card race context in the pulse if the Brewers fall out of the division lead.
+- Series-level framing on the schedule (e.g. "won 2 of 3 vs the Cubs").
 Keep each as a small, self-contained addition.

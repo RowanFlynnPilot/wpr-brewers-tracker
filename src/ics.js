@@ -34,6 +34,12 @@ export function buildICS(games, nowISO) {
       `DTEND:${end}`,
       `SUMMARY:${esc(summary)}`,
       `LOCATION:${esc(g.venue?.name || '')}`,
+      // 30-minute heads-up so imported games actually nudge the reader at game time.
+      'BEGIN:VALARM',
+      'ACTION:DISPLAY',
+      'DESCRIPTION:First pitch in 30 minutes',
+      'TRIGGER:-PT30M',
+      'END:VALARM',
       'END:VEVENT'
     )
   })

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { theme } from '../theme.js'
 import { useIsNarrow } from '../useIsNarrow.js'
 import { track } from '../analytics.js'
@@ -6,6 +7,7 @@ import { track } from '../analytics.js'
 // great watch spot, and game-day specials. All content is config-driven (no API).
 export default function WhereToWatch({ venue }) {
   const narrow = useIsNarrow()
+  const [imgFailed, setImgFailed] = useState(false)
   if (!venue) return null
 
   const linkProps = venue.url
@@ -16,8 +18,8 @@ export default function WhereToWatch({ venue }) {
     <div style={{ border: `1px solid ${theme.rule}`, borderLeft: `3px solid ${theme.gold}`, borderRadius: 10, background: theme.wash, overflow: 'hidden', display: 'flex', flexDirection: narrow ? 'column' : 'row' }}>
       {/* Photo (venue-provided) or a placeholder */}
       <div style={{ flex: narrow ? 'none' : '0 0 286px', background: theme.navy, minHeight: narrow ? 170 : 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {venue.image ? (
-          <img src={venue.image} alt={venue.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} onError={(e) => { e.currentTarget.style.display = 'none' }} />
+        {venue.image && !imgFailed ? (
+          <img src={venue.image} alt={venue.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} onError={() => setImgFailed(true)} />
         ) : (
           <span style={{ fontFamily: theme.sans, fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.6)' }}>Venue photo</span>
         )}

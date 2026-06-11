@@ -8,6 +8,7 @@ import TeamLogo from './TeamLogo.jsx'
 import PitcherLine from './PitcherLine.jsx'
 
 const REFRESH_MS = 45000 // API caches 60s; poll a touch faster so a live score never feels stale.
+const IDLE_REFRESH_MS = 120000 // pre-game/final cadence — keeps the hero able to flip to Live on its own.
 
 // Bases diamond for live games — occupied bases fill gold.
 function Bases({ first, second, third }) {
@@ -40,7 +41,7 @@ export default function GameHero() {
   const [alertsOn, setAlertsOn] = useState(() => {
     try { return localStorage.getItem('brewersAlerts') === '1' } catch { return false }
   })
-  const wasLive = useRef(false)
+  const wasLive = useRef(null)
   const toggleAlerts = () => {
     const persist = (v) => { try { localStorage.setItem('brewersAlerts', v ? '1' : '0') } catch {} }
     if (alertsOn) { setAlertsOn(false); persist(false); return }
@@ -62,22 +63,28 @@ export default function GameHero() {
 
   const live = game?.status?.abstractGameState === 'Live'
   const gamePk = game?.gamePk
+  // Poll the feed always — fast while live (with win-probability/plays extras), gently otherwise.
+  // Without the idle cadence the hero would never notice a game going live, and the opt-in alert
+  // (which watches for that flip) could never fire.
   useEffect(() => {
-    if (!live) { setExtras(null); return }
+    if (!live) setExtras(null)
     const refresh = () => {
       if (document.hidden) return
       load()
-      if (gamePk) fetchLiveExtras(gamePk).then(setExtras).catch(() => {})
+      if (live && gamePk) fetchLiveExtras(gamePk).then(setExtras).catch(() => {})
     }
-    refresh()
-    const id = setInterval(refresh, REFRESH_MS)
+    if (live) refresh()
+    const id = setInterval(refresh, live ? REFRESH_MS : IDLE_REFRESH_MS)
     document.addEventListener('visibilitychange', refresh)
     return () => { clearInterval(id); document.removeEventListener('visibilitychange', refresh) }
   }, [live, gamePk, load])
 
   // Fire an alert once when the featured game flips to live (only if opted in + permitted).
+  // wasLive starts null so a page opened mid-game sets the baseline silently — only an
+  // observed not-live → live transition notifies.
   useEffect(() => {
-    if (game && live && !wasLive.current && alertsOn && canAlert && Notification.permission === 'granted') {
+    if (!game) return
+    if (wasLive.current === false && live && alertsOn && canAlert && Notification.permission === 'granted') {
       const h = game.teams.home.team.id === TEAM_ID
       const opp = (h ? game.teams.away : game.teams.home).team.name.replace('Milwaukee ', '')
       try { new Notification('Brewers game is underway', { body: `${h ? 'vs' : '@'} ${opp}`, icon: `${import.meta.env.BASE_URL}icon.svg` }) } catch {}

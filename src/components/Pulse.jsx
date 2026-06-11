@@ -1,7 +1,7 @@
 import { theme } from '../theme.js'
 import { TEAM_ID } from '../config.js'
 import { useIsNarrow } from '../useIsNarrow.js'
-import { Loading } from './Status.jsx'
+import { Loading, ErrorState } from './Status.jsx'
 
 const DASH = '–'
 const gamesBack = (lw, ll, w, l) => ((lw - w) + (l - ll)) / 2
@@ -10,14 +10,16 @@ const ord = (n) => { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n +
 // Receives shared standings from App (single fetch feeds Pulse + Standings); lastGame is derived
 // from the division schedules in App. Layout: a tight marquee row, a compact secondary strip,
 // then a short narrative.
-export default function Pulse({ standings, lastGame, ranks }) {
+export default function Pulse({ standings, lastGame, ranks, error }) {
   const narrow = useIsNarrow()
-  if (!standings) return <Loading />
+  if (!standings) return error ? <ErrorState /> : <Loading />
 
   const me = standings.find((t) => t.team.id === TEAM_ID)
   const sorted = [...standings].sort((a, b) => parseFloat(b.winningPercentage) - parseFloat(a.winningPercentage))
   const rank = sorted.findIndex((t) => t.team.id === TEAM_ID) + 1
-  const lead = rank === 1 ? gamesBack(me.wins, me.losses, sorted[1].wins, sorted[1].losses) : -parseFloat(me.gamesBack)
+  // Leading: margin over second place. Trailing: deficit shown as a plain magnitude (the label
+  // already says "Games back" — a minus sign would read as a double negative). '-' (tied) → NaN → dash.
+  const lead = rank === 1 ? gamesBack(me.wins, me.losses, sorted[1].wins, sorted[1].losses) : parseFloat(me.gamesBack)
   const split = (type) => (me.records?.splitRecords || []).find((s) => s.type === type)
   const l10 = split('lastTen')
   const home = split('home')
@@ -64,7 +66,7 @@ export default function Pulse({ standings, lastGame, ranks }) {
     <div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
         {cell(rec(me), 'Record')}
-        {cell(rank === 1 ? `+${lead}` : `${lead}`, rank === 1 ? 'NL Central lead' : 'Games back', leadColor)}
+        {cell(rank === 1 ? `+${lead}` : Number.isFinite(lead) ? `${lead}` : DASH, rank === 1 ? 'NL Central lead' : 'Games back', leadColor)}
         {cell(`${rd > 0 ? '+' : ''}${rd}`, 'Run diff', rdColor)}
         {cell(me.streak?.streakCode || DASH, 'Streak', streakColor)}
         {cell(l10 ? rec(l10) : DASH, 'Last 10')}

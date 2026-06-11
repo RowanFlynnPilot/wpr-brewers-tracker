@@ -11,27 +11,29 @@ async function getJSON(path) {
   return res.json()
 }
 
-const today = () => new Date().toISOString().slice(0, 10)
+// Local calendar dates, not UTC — toISOString() rolls to "tomorrow" after 7 PM Central,
+// which would drop tonight's game from date-windowed requests (e.g. the calendar export).
+const pad2 = (n) => String(n).padStart(2, '0')
+const localDate = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
+const today = () => localDate(new Date())
 
-// Current division standings (team records array).
-export async function fetchDivisionStandings() {
+// One /standings call feeds both the division table and the Brewers' NL ranks
+// (runs scored: most first; runs allowed: fewest first) — they share the endpoint.
+export async function fetchStandingsBundle() {
   const data = await getJSON(`/standings?leagueId=${LEAGUE_ID}&season=${SEASON}`)
   const record = data.records.find((r) => r.division.id === DIVISION_ID)
   if (!record) throw new Error('Division not found in standings response')
-  return record.teamRecords
-}
-
-// Brewers' rank across the National League: runs scored (most first) and runs allowed (fewest first).
-export async function fetchLeagueRanks() {
-  const data = await getJSON(`/standings?leagueId=${LEAGUE_ID}&season=${SEASON}`)
   const teams = data.records.flatMap((r) => r.teamRecords)
   const rankBy = (cmp) => {
     const sorted = [...teams].sort(cmp)
     return { rank: sorted.findIndex((t) => t.team.id === TEAM_ID) + 1, of: teams.length }
   }
   return {
-    runsScored: rankBy((a, b) => b.runsScored - a.runsScored),
-    runsAllowed: rankBy((a, b) => a.runsAllowed - b.runsAllowed),
+    standings: record.teamRecords,
+    ranks: {
+      runsScored: rankBy((a, b) => b.runsScored - a.runsScored),
+      runsAllowed: rankBy((a, b) => a.runsAllowed - b.runsAllowed),
+    },
   }
 }
 
@@ -57,28 +59,33 @@ export async function fetchTeamSchedule() {
   const t = new Date()
   const back = new Date(t); back.setDate(t.getDate() - 6)
   const fwd = new Date(t); fwd.setDate(t.getDate() + 10)
-  const fmt = (d) => d.toISOString().slice(0, 10)
-  const data = await getJSON(`/schedule?sportId=1&teamId=${TEAM_ID}&startDate=${fmt(back)}&endDate=${fmt(fwd)}&hydrate=probablePitcher,team`)
+  const data = await getJSON(`/schedule?sportId=1&teamId=${TEAM_ID}&startDate=${localDate(back)}&endDate=${localDate(fwd)}&hydrate=probablePitcher,team`)
   return data.dates.flatMap((day) => day.games.map((g) => ({ date: day.date, game: g })))
 }
 
-// The single "featured" game for the hero: live now, else next upcoming, else last final.
-// Hydrates linescore so the hero can show inning/outs/score while a game is in progress.
+// The single "featured" game for the hero: live now; else a just-finished final (held through
+// the post-game check-in window rather than flipping straight to the next matchup); else the
+// next upcoming game; else the last final. Hydrates linescore for the live inning/outs/score.
 export async function fetchFeaturedGame() {
   const t = new Date()
   const back = new Date(t); back.setDate(t.getDate() - 1)
   const fwd = new Date(t); fwd.setDate(t.getDate() + 7)
-  const fmt = (d) => d.toISOString().slice(0, 10)
-  const data = await getJSON(`/schedule?sportId=1&teamId=${TEAM_ID}&startDate=${fmt(back)}&endDate=${fmt(fwd)}&hydrate=probablePitcher,linescore,team`)
+  const data = await getJSON(`/schedule?sportId=1&teamId=${TEAM_ID}&startDate=${localDate(back)}&endDate=${localDate(fwd)}&hydrate=probablePitcher,linescore,team`)
   const games = data.dates.flatMap((day) => day.games)
   if (!games.length) return null
   // abstractGameState is 'Live' | 'Preview' | 'Final' — cleaner than detailedState for picking.
-  return (
-    games.find((g) => g.status.abstractGameState === 'Live') ||
-    games.find((g) => g.status.abstractGameState === 'Preview') ||
-    games.filter((g) => g.status.abstractGameState === 'Final').pop() ||
-    games[games.length - 1]
-  )
+  const live = games.find((g) => g.status.abstractGameState === 'Live')
+  if (live) return live
+  const previews = games.filter((g) => g.status.abstractGameState === 'Preview')
+  const finals = games.filter((g) => g.status.abstractGameState === 'Final')
+  const lastFinal = finals[finals.length - 1]
+  // "Recent" = first pitch today or within the past 8 hours. A doubleheader nightcap
+  // (a Preview on the same day as the final) takes the hero back over.
+  const sameLocalDay = (a, b) => new Date(a).toDateString() === new Date(b).toDateString()
+  if (lastFinal && (sameLocalDay(lastFinal.gameDate, t) || t - new Date(lastFinal.gameDate) < 8 * 3600 * 1000)) {
+    return previews.find((g) => sameLocalDay(g.gameDate, lastFinal.gameDate)) || lastFinal
+  }
+  return previews[0] || lastFinal || games[games.length - 1]
 }
 
 // One pitcher's season pitching line (ERA, W-L, K, …). Returns the stat object, or null if the

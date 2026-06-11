@@ -1,7 +1,7 @@
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine, Legend } from 'recharts'
 import { theme } from '../theme.js'
 import { DIVISION, TEAM_COLORS, TEAM_ABBR, TEAM_ID } from '../config.js'
-import { Loading } from './Status.jsx'
+import { Loading, ErrorState } from './Status.jsx'
 
 const gamesBack = (lw, ll, w, l) => ((lw - w) + (l - ll)) / 2
 
@@ -49,8 +49,8 @@ function buildSeries(teams) {
   return rows.filter((_, i, arr) => i % 4 === 0 || i === arr.length - 1) // thin for smoother lines; always keep the latest
 }
 
-export default function Race({ schedules }) {
-  if (!schedules) return <Loading block />
+export default function Race({ schedules, error }) {
+  if (!schedules) return error ? <ErrorState /> : <Loading block />
   const data = buildSeries(schedules)
 
   return (

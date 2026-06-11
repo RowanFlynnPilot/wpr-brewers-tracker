@@ -1,6 +1,6 @@
 import { theme } from '../theme.js'
 import { headshot } from '../config.js'
-import { Loading } from './Status.jsx'
+import { Loading, ErrorState } from './Status.jsx'
 
 const th = { fontFamily: theme.sans, fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', color: theme.muted, textAlign: 'right', padding: '6px 8px', fontWeight: 700 }
 const td = { fontFamily: theme.sans, fontSize: 13, color: theme.ink, textAlign: 'right', padding: '8px', borderTop: `1px solid ${theme.rule}` }
@@ -76,8 +76,8 @@ function buildLeaders(roster) {
   return { hitters: hitters.slice(0, 8), pitchers: pitchers.slice(0, 8) }
 }
 
-export default function Players({ roster }) {
-  if (!roster) return <Loading />
+export default function Players({ roster, error }) {
+  if (!roster) return error ? <ErrorState /> : <Loading />
   const leaders = buildLeaders(roster)
 
   return (

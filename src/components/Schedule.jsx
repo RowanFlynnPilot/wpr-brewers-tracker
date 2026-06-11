@@ -13,8 +13,14 @@ export default function Schedule() {
   const [error, setError] = useState(false)
   const [openGame, setOpenGame] = useState(null) // { gamePk, label } for the box-score modal
 
+  // Initial fetch + a gentle refresh so live scores on the cards stay current (the hero polls
+  // faster on its own). Refresh failures keep the prior data rather than blanking the grid.
   useEffect(() => {
     fetchTeamSchedule().then(setGames).catch(() => setError(true))
+    const id = setInterval(() => {
+      if (!document.hidden) fetchTeamSchedule().then(setGames).catch(() => {})
+    }, 120000)
+    return () => clearInterval(id)
   }, [])
 
   if (error) return <ErrorState />
@@ -30,8 +36,10 @@ export default function Schedule() {
         const home = game.teams.home.team.id === TEAM_ID
         const oppTeam = home ? game.teams.away.team : game.teams.home.team
         const opponent = oppTeam.name.replace('Milwaukee ', '')
-        const final = game.status.detailedState === 'Final'
-        const live = game.status.detailedState === 'In Progress'
+        // abstractGameState, not detailedState: 'Live' covers delays/challenges/warmup and
+        // 'Final' covers "Game Over"/"Completed Early", so cards never blank out mid-delay.
+        const final = game.status.abstractGameState === 'Final'
+        const live = game.status.abstractGameState === 'Live'
         const myScore = game.teams[home ? 'home' : 'away'].score
         const oppScore = game.teams[home ? 'away' : 'home'].score
         const probable = game.teams[home ? 'home' : 'away'].probablePitcher

@@ -1,12 +1,14 @@
 // Derivations over division schedules (the same feed the race chart uses). Pure functions — no fetching.
 import { TEAM_ID } from './config.js'
 
-// A team's completed games in date order, each flagged won/lost with the score + opponent.
+// A team's completed regular-season games in date order, each flagged won/lost with the score
+// + opponent. abstractGameState (not detailedState) so "Game Over"/"Completed Early" count too;
+// gameType 'R' so spring-training results never leak into recaps or form.
 function finals(dates, teamId) {
   const out = []
   dates.forEach((day) =>
     day.games.forEach((g) => {
-      if (g.status.detailedState !== 'Final') return
+      if (g.status.abstractGameState !== 'Final' || g.gameType !== 'R') return
       const home = g.teams.home.team.id === teamId
       const me = home ? g.teams.home : g.teams.away
       const opp = home ? g.teams.away : g.teams.home
@@ -23,6 +25,13 @@ export function lastFinalGame(schedules) {
   if (!mine) return null
   const fs = finals(mine.dates, TEAM_ID)
   return fs.length ? fs[fs.length - 1] : null
+}
+
+// A team's last n results, oldest → newest — feeds the standings form strip.
+export function recentResults(schedules, teamId, n = 10) {
+  const team = schedules?.find((s) => s.id === teamId)
+  if (!team) return []
+  return finals(team.dates, teamId).slice(-n).map((g) => g.won)
 }
 
 // Turn a raw play-by-play decisive play into a natural sentence about the go-ahead hit.
@@ -75,15 +84,17 @@ export function rankThisDay(games) {
     const margin = Math.abs(me - opp)
 
     // Walk through innings to find the largest deficit faced (for comebacks) and a walk-off.
-    let meCum = 0, oppCum = 0, maxDef = 0, mePrev = 0, oppPrev = 0
+    let meCum = 0, oppCum = 0, maxDef = 0, mePrev = 0
     innings.forEach((inn, idx) => {
-      if (idx === innings.length - 1) { mePrev = meCum; oppPrev = oppCum }
+      if (idx === innings.length - 1) mePrev = meCum
       meCum += inn[meSide]?.runs || 0
       oppCum += inn[oppSide]?.runs || 0
       if (oppCum - meCum > maxDef) maxDef = oppCum - meCum
     })
     const lastInning = innings[innings.length - 1]
-    const walkoff = home && won && (lastInning?.home?.runs || 0) > 0 && mePrev <= oppPrev
+    // Walk-off: entering their final at-bat the Brewers were at or behind the opponent's FINAL
+    // total (the away team has already finished batting), and won by scoring in that at-bat.
+    const walkoff = home && won && (lastInning?.home?.runs || 0) > 0 && mePrev <= opp
 
     const lr = game.teams[meSide]?.leagueRecord
     const record = lr && lr.wins != null ? { wins: lr.wins, losses: lr.losses } : null
