@@ -1,7 +1,9 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { theme } from '../theme.js'
-import { TEAM_ID, SPONSORS } from '../config.js'
+import { TEAM_ID, SPONSORS, SITE_URL } from '../config.js'
 import { fetchFeaturedGame, fetchLiveExtras } from '../api.js'
+import { fetchFirstPitchForecast } from '../weather.js'
+import { track } from '../analytics.js'
 import { useIsNarrow } from '../useIsNarrow.js'
 import Sponsor from './Sponsor.jsx'
 import TeamLogo from './TeamLogo.jsx'
@@ -9,6 +11,48 @@ import PitcherLine from './PitcherLine.jsx'
 
 const REFRESH_MS = 45000 // API caches 60s; poll a touch faster so a live score never feels stale.
 const IDLE_REFRESH_MS = 120000 // pre-game/final cadence — keeps the hero able to flip to Live on its own.
+
+// Inning-by-inning scoreboard for live/final games, from the hydrated linescore.
+function LinescoreStrip({ ls, homeIsMe, oppName }) {
+  const innings = ls?.innings || []
+  if (!innings.length || !ls.teams) return null
+  const cell = { padding: '3px 7px', fontFamily: theme.sans, fontSize: 12, color: theme.ink, textAlign: 'center' }
+  const head = { ...cell, color: theme.muted, fontSize: 10, fontWeight: 700, textTransform: 'uppercase' }
+  const rows = [
+    { side: 'away', name: homeIsMe ? oppName : 'Brewers' },
+    { side: 'home', name: homeIsMe ? 'Brewers' : oppName },
+  ]
+  return (
+    <div style={{ overflowX: 'auto', margin: '0 0 18px' }}>
+      <table style={{ borderCollapse: 'collapse', margin: '0 auto', width: 'auto' }}>
+        <thead>
+          <tr>
+            <th style={{ ...head, textAlign: 'left' }} />
+            {innings.map((i) => <th key={i.num} style={head}>{i.num}</th>)}
+            <th style={{ ...head, borderLeft: `1px solid ${theme.rule}` }}>R</th>
+            <th style={head}>H</th>
+            <th style={head}>E</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => {
+            const isMe = (r.side === 'home') === homeIsMe
+            const tot = ls.teams[r.side] || {}
+            return (
+              <tr key={r.side}>
+                <td style={{ ...cell, textAlign: 'left', fontFamily: theme.serif, fontSize: 13, fontWeight: isMe ? 700 : 400, color: isMe ? theme.navy : theme.ink }}>{r.name}</td>
+                {innings.map((i) => <td key={i.num} style={cell}>{i[r.side]?.runs ?? ''}</td>)}
+                <td style={{ ...cell, fontWeight: 700, borderLeft: `1px solid ${theme.rule}` }}>{tot.runs ?? ''}</td>
+                <td style={cell}>{tot.hits ?? ''}</td>
+                <td style={cell}>{tot.errors ?? ''}</td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
+  )
+}
 
 // Bases diamond for live games — occupied bases fill gold.
 function Bases({ first, second, third }) {
@@ -33,6 +77,8 @@ export default function GameHero() {
   const [error, setError] = useState(false)
   const [now, setNow] = useState(Date.now())
   const [extras, setExtras] = useState(null)
+  const [forecast, setForecast] = useState(null)
+  const [copied, setCopied] = useState(false) // share-button clipboard feedback
   const narrow = useIsNarrow()
 
   // Opt-in game alert. Notifications only work on the standalone page (cross-origin iframes block
@@ -92,6 +138,18 @@ export default function GameHero() {
     wasLive.current = live
   }, [live, alertsOn, canAlert, game])
 
+  // First-pitch forecast for upcoming HOME games (Open-Meteo covers the Milwaukee ballpark;
+  // away cities are out of scope). Fail-soft — the line simply doesn't render.
+  const gameState = game?.status?.abstractGameState
+  useEffect(() => {
+    setForecast(null)
+    if (!game || gameState !== 'Preview' || game.teams.home.team.id !== TEAM_ID) return
+    let alive = true
+    fetchFirstPitchForecast(game.gameDate).then((f) => { if (alive) setForecast(f) }).catch(() => {})
+    return () => { alive = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- game object churns every poll; pk+state pin the fetch
+  }, [gamePk, gameState])
+
   if (error || !game) return null
 
   const final = game.status.abstractGameState === 'Final'
@@ -110,6 +168,26 @@ export default function GameHero() {
   const when = !live && !final
     ? new Date(game.gameDate).toLocaleString('en-US', { weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
     : null
+
+  // Share the game (native sheet on mobile, clipboard elsewhere). When embedded, share the
+  // hosting WPR page rather than the bare iframe URL.
+  const share = () => {
+    const url = window.self === window.top ? window.location.href : (document.referrer || SITE_URL)
+    const text = live
+      ? `Brewers ${me.score}–${opp.score} ${home ? 'vs' : 'at'} the ${oppName} — live now`
+      : final
+      ? `Final: Brewers ${won ? 'beat' : 'fall to'} the ${oppName}, ${won ? `${me.score}–${opp.score}` : `${opp.score}–${me.score}`}`
+      : `Brewers ${home ? 'vs' : 'at'} the ${oppName} — ${when}`
+    track('Share', { context: kicker })
+    if (navigator.share) {
+      navigator.share({ title: 'Brewers tracker — Wausau Pilot & Review', text, url }).catch(() => {})
+    } else if (navigator.clipboard) {
+      navigator.clipboard.writeText(`${text} — ${url}`).then(() => {
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      }).catch(() => {})
+    }
+  }
 
   // Pre-game countdown when first pitch is within the next 12 hours.
   const msToStart = !live && !final ? new Date(game.gameDate).getTime() - now : null
@@ -143,6 +221,12 @@ export default function GameHero() {
       {(when || series || countdown) && (
         <div style={{ fontFamily: theme.sans, fontSize: 12.5, color: theme.muted, marginTop: 6 }}>
           {[when, series, countdown].filter(Boolean).join(' · ')}
+        </div>
+      )}
+      {!live && !final && forecast && (
+        <div style={{ fontFamily: theme.sans, fontSize: 12.5, color: theme.muted, marginTop: 5 }}>
+          First-pitch forecast: {forecast.tempF}°F, {forecast.label} · {forecast.precipPct}% chance of rain · {forecast.windMph} mph wind
+          {SPONSORS.forecast && <> · <Sponsor sponsor={SPONSORS.forecast} compact slot="forecast" /></>}
         </div>
       )}
 
@@ -223,19 +307,25 @@ export default function GameHero() {
         </div>
       )}
 
+      {/* Inning-by-inning scoreboard */}
+      {(live || final) && <LinescoreStrip ls={ls} homeIsMe={home} oppName={oppName} />}
+
       {/* Sponsor */}
       <div style={{ display: 'flex', justifyContent: 'center' }}>
         <Sponsor sponsor={SPONSORS.header} variant="light" compact slot="hero" />
       </div>
 
-      {/* Opt-in game alert (standalone app only) */}
-      {canAlert && (
-        <div style={{ marginTop: 12 }}>
+      {/* Share + opt-in game alert (alerts: standalone app only) */}
+      <div style={{ marginTop: 12, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 18, flexWrap: 'wrap' }}>
+        <button onClick={share} className="link-hover" style={{ cursor: 'pointer', background: 'transparent', border: 'none', fontFamily: theme.sans, fontSize: 11, letterSpacing: '0.04em', color: copied ? theme.navy : theme.muted, fontWeight: copied ? 700 : 400 }}>
+          {copied ? 'Link copied' : 'Share this game'}
+        </button>
+        {canAlert && (
           <button onClick={toggleAlerts} className="link-hover" style={{ cursor: 'pointer', background: 'transparent', border: 'none', fontFamily: theme.sans, fontSize: 11, letterSpacing: '0.04em', color: alertsOn ? theme.navy : theme.muted, fontWeight: alertsOn ? 700 : 400 }}>
             {alertsOn ? 'Game alerts on (while this tab is open)' : 'Alert me at game time'}
           </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }

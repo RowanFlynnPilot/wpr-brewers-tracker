@@ -26,6 +26,10 @@ export const WPR_LOGO = 'https://wausaupilotandreview.com/wp-content/uploads/202
 export const WPR_TAGLINE = 'Where Locals Look First For News'
 export const WPR_URL = 'https://wausaupilotandreview.com/'
 
+// Canonical URL of the standalone tracker — used by the share button, the calendar-event
+// description, and the social-card tags in index.html.
+export const SITE_URL = 'https://rowanflynnpilot.github.io/wpr-brewers-tracker/'
+
 // Sellable sponsor surfaces. One title slot (the navy banner) plus two inline section slots.
 // A slot is either a sponsor object or null (renders as an "available" upsell card).
 // Sponsor shape: { name, logo, url, tagline? } — logo optional (falls back to the name in serif).
@@ -40,6 +44,9 @@ export const SPONSORS = {
   // Open inventory. Set to a sponsor object (same shape as above) to fill the slot.
   race: null,
   leaders: null,
+  // First-pitch forecast credit (a compact "Presented by" line in the hero — no upsell card
+  // when empty; the forecast simply renders unsponsored until this is sold).
+  forecast: null,
 }
 
 // Where to send sponsorship inquiries (shown on empty slots — the upsell).
@@ -65,8 +72,9 @@ export const SPONSOR_DISCLAIMER =
 
 // Privacy-light analytics (Plausible — cookieless, no consent banner). For sponsor ROI:
 // page views = impressions, plus a 'Sponsor Click' event per slot = click-throughs.
-// Set `domain` to your Plausible site to enable; leave '' and nothing loads (no dependency).
+// Set `domain` to '' to disable entirely (no script loads). Data only flows once this domain
+// is also added as a site in the WPR Plausible account — until then events are sent and dropped.
 export const ANALYTICS = {
-  domain: '', // e.g. 'rowanflynnpilot.github.io' — the site you add in your Plausible dashboard
+  domain: 'rowanflynnpilot.github.io',
   src: 'https://plausible.io/js/script.js',
 }

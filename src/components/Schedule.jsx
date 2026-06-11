@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { theme } from '../theme.js'
 import { TEAM_ID } from '../config.js'
 import { fetchTeamSchedule } from '../api.js'
+import { seriesSummary } from '../games.js'
 import { Loading, ErrorState } from './Status.jsx'
 import TeamLogo from './TeamLogo.jsx'
 import PitcherLine from './PitcherLine.jsx'
@@ -26,9 +27,14 @@ export default function Schedule() {
   if (error) return <ErrorState />
   if (!games) return <Loading />
 
+  const series = seriesSummary(games)
+
   return (
     <>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
+        <div style={{ fontFamily: theme.serif, fontStyle: 'italic', fontSize: 14.5, color: theme.muted }}>
+          {series.join(' · ')}
+        </div>
         <CalendarButton />
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: 10 }}>

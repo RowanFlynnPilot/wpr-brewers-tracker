@@ -59,6 +59,13 @@ export default function Pulse({ standings, lastGame, ranks, error }) {
   if (home) minis.push([rec(home), 'Home'])
   if (away) minis.push([rec(away), 'Away'])
   if (rank === 1 && me.magicNumber && me.magicNumber !== '-') minis.push([`${me.magicNumber}`, 'Magic number'])
+  // Wild-card context, only once the division lead is gone: holding a spot shows which one,
+  // chasing shows the deficit to the final spot. (wildCardGamesBack is '-' for division leaders.)
+  if (rank !== 1) {
+    const wcRank = Number(me.wildCardRank)
+    if (wcRank >= 1 && wcRank <= 3) minis.push([ord(wcRank), 'Wild card spot'])
+    else if (me.wildCardGamesBack && me.wildCardGamesBack !== '-') minis.push([me.wildCardGamesBack, 'Back of final wild card'])
+  }
   if (ranks) minis.push([ord(ranks.runsScored.rank), 'In NL runs scored'])
   if (ranks) minis.push([ord(ranks.runsAllowed.rank), 'In runs allowed'])
 

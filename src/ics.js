@@ -1,6 +1,6 @@
 // Build an iCalendar (.ics) feed of the Brewers' remaining regular-season games — client-side,
 // from the MLB schedule. Importable into Apple/Google/Outlook calendars.
-import { TEAM_ID } from './config.js'
+import { TEAM_ID, SPONSORS, SITE_URL } from './config.js'
 
 const pad = (n) => String(n).padStart(2, '0')
 const toICS = (iso) => {
@@ -34,6 +34,8 @@ export function buildICS(games, nowISO) {
       `DTEND:${end}`,
       `SUMMARY:${esc(summary)}`,
       `LOCATION:${esc(g.venue?.name || '')}`,
+      // A sponsor credit that lives inside the reader's calendar for the rest of the season.
+      `DESCRIPTION:${esc(`Live Brewers tracker from Wausau Pilot & Review${SPONSORS.header ? `, presented by ${SPONSORS.header.name}` : ''}: ${SITE_URL}`)}`,
       // 30-minute heads-up so imported games actually nudge the reader at game time.
       'BEGIN:VALARM',
       'ACTION:DISPLAY',

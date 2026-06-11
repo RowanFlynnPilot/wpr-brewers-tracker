@@ -34,6 +34,59 @@ export function recentResults(schedules, teamId, n = 10) {
   return finals(team.dates, teamId).slice(-n).map((g) => g.won)
 }
 
+// Series framing over the team-schedule feed ({date, game} rows): short lines for the last
+// completed series and the one in progress, e.g. "Won 2 of 3 vs the Cubs" · "Up 1–0 on the
+// Athletics". Series whose first game falls outside the window are skipped (can't score them).
+export function seriesSummary(rows) {
+  const groups = []
+  rows.forEach(({ game }) => {
+    if (game.gameType !== 'R') return
+    const home = game.teams.home.team.id === TEAM_ID
+    const opp = (home ? game.teams.away : game.teams.home).team
+    const last = groups[groups.length - 1]
+    if (last && last.oppId === opp.id) last.games.push(game)
+    // teamName is the short club name ("Cubs") — present because the schedule hydrates team.
+    else groups.push({ oppId: opp.id, oppName: opp.teamName || opp.name.replace('Milwaukee ', ''), games: [game] })
+  })
+
+  let lastDone = null
+  let current = null
+  groups.forEach((grp) => {
+    if (grp.games[0].seriesGameNumber !== 1) return
+    const total = grp.games[0].gamesInSeries || grp.games.length
+    let w = 0, l = 0
+    grp.games.forEach((g) => {
+      if (g.status.abstractGameState !== 'Final') return
+      const home = g.teams.home.team.id === TEAM_ID
+      const me = home ? g.teams.home : g.teams.away
+      const op = home ? g.teams.away : g.teams.home
+      if (me.score == null || op.score == null) return
+      if (me.score > op.score) w++; else l++
+    })
+    if (w + l === 0) return
+    const item = { oppName: grp.oppName, w, l, total }
+    if (w + l === total) lastDone = item
+    else current = item
+  })
+
+  const lines = []
+  if (lastDone) {
+    const { w, l, total, oppName } = lastDone
+    lines.push(
+      w === total ? `Swept the ${oppName}` :
+      l === total ? `Swept by the ${oppName}` :
+      w > l ? `Won ${w} of ${total} vs the ${oppName}` :
+      w === l ? `Split the series with the ${oppName}` :
+      `Dropped ${l} of ${total} vs the ${oppName}`
+    )
+  }
+  if (current) {
+    const { w, l, oppName } = current
+    lines.push(w > l ? `Up ${w}–${l} on the ${oppName}` : w < l ? `Down ${w}–${l} to the ${oppName}` : `Tied ${w}–${l} with the ${oppName}`)
+  }
+  return lines
+}
+
 // Turn a raw play-by-play decisive play into a natural sentence about the go-ahead hit.
 // e.g. { batter: 'Aramis Ramirez', description: 'Aramis Ramirez singles ... Jean Segura scores.' }
 //   -> "Aramis Ramirez singled home Jean Segura with the go-ahead run."
