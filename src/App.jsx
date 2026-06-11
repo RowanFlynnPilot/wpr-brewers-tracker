@@ -15,6 +15,7 @@ import Players from './components/Players.jsx'
 import ThisDay from './components/ThisDay.jsx'
 import WhereToWatch from './components/WhereToWatch.jsx'
 import MilestoneWatch, { milestoneWatch } from './components/MilestoneWatch.jsx'
+import SponsorBand from './components/SponsorBand.jsx'
 import { Loading } from './components/Status.jsx'
 
 // Recharts is the heaviest dependency — load the race chart in its own chunk.
@@ -87,6 +88,7 @@ export default function App() {
           <Suspense fallback={<Loading block />}><Race schedules={schedules} error={errors.schedules} /></Suspense>
         </Section>
         <Section kicker="Recent & upcoming" title="The schedule"><Schedule /></Section>
+        <SponsorBand />
         {WATCH_PARTY && <Section kicker="Where to watch" title="Catch the games this week"><WhereToWatch venue={WATCH_PARTY} /></Section>}
         <Section kicker="From the vault" title="This day in Brewers history"><ThisDay /></Section>
         <Section kicker="At the plate & on the mound" title="Team leaders"><Players roster={roster} error={errors.roster} /></Section>
