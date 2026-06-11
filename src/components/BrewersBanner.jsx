@@ -7,8 +7,8 @@ export default function BrewersBanner() {
   const narrow = useIsNarrow()
   return (
     <div style={{ background: theme.navy, color: '#fff', padding: narrow ? '20px 16px' : '26px 20px' }}>
-      <div style={{ maxWidth: 880, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+      <div style={{ maxWidth: 880, margin: '0 auto' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 18 }}>
           {USE_TEAM_LOGO && (
             <img src={TEAM_LOGO} alt="Milwaukee Brewers" width={56} height={56} style={{ objectFit: 'contain' }} onError={(e) => { e.currentTarget.style.display = 'none' }} />
           )}
@@ -18,7 +18,8 @@ export default function BrewersBanner() {
             <div style={{ fontFamily: theme.serif, fontStyle: 'italic', fontSize: 16, color: '#cdd6e3', marginTop: 4 }}>The shape of Milwaukee's season, updated live.</div>
           </div>
         </div>
-        <Sponsor sponsor={SPONSORS.header} variant="dark" slot="banner" />
+        {/* Title sponsor spans the full banner width — the premium placement, sized like one. */}
+        <Sponsor sponsor={SPONSORS.header} variant="dark" slot="banner" fullWidth />
       </div>
     </div>
   )

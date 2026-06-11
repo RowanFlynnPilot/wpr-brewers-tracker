@@ -5,7 +5,8 @@ import { track } from '../analytics.js'
 // Sponsor lockup. One responsibility: render a paid sponsor, or an "available" upsell card.
 // `variant` adapts the chrome to the dark navy banner vs. a light editorial section.
 // `slot` labels the placement (banner/hero/race/leaders) for per-slot click reporting.
-export default function Sponsor({ sponsor, variant = 'light', compact = false, slot }) {
+// `fullWidth` stretches the lockup across its container (the banner) as a horizontal bar.
+export default function Sponsor({ sponsor, variant = 'light', compact = false, fullWidth = false, slot }) {
   const dark = variant === 'dark'
   const labelColor = dark ? '#cdd6e3' : theme.muted
   const nameColor = dark ? '#fff' : theme.ink
@@ -41,7 +42,7 @@ export default function Sponsor({ sponsor, variant = 'light', compact = false, s
   // Open slot — a tasteful upsell rather than an empty hole.
   if (!sponsor) {
     return (
-      <div style={{ textAlign: 'right', border: `1px dashed ${border}`, borderRadius: 4, padding: '8px 12px' }}>
+      <div style={{ textAlign: fullWidth ? 'left' : 'right', width: fullWidth ? '100%' : undefined, border: `1px dashed ${border}`, borderRadius: 4, padding: '8px 12px' }}>
         {label('Sponsorship available')}
         <div style={{ fontFamily: theme.serif, fontStyle: 'italic', fontSize: 13, color: nameColor, marginTop: 3 }}>
           Reach Wisconsin sports fans
@@ -55,6 +56,39 @@ export default function Sponsor({ sponsor, variant = 'light', compact = false, s
   // gold top-accent, a prominent logo, and a click cue. The logo art is on white, so a white card
   // frames it naturally.
   const Box = sponsor.url ? 'a' : 'div'
+
+  // Full-width bar: eyebrow on top, then logo · tagline · CTA on one wrapping row.
+  if (fullWidth) {
+    return (
+      <Box
+        {...linkProps}
+        className={sponsor.url ? 'link-hover' : undefined}
+        style={{
+          display: 'block', width: '100%', textAlign: 'left', textDecoration: 'none',
+          background: '#fff', border: `1px solid ${theme.rule}`, borderTop: `3px solid ${theme.gold}`,
+          borderRadius: 8, padding: '12px 18px 13px',
+          boxShadow: dark ? '0 6px 20px rgba(0,0,0,0.25)' : '0 2px 8px rgba(0,0,0,0.06)',
+        }}
+      >
+        <div style={{ fontFamily: theme.sans, fontSize: 9.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: theme.gold, fontWeight: 700 }}>Presented by</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap', marginTop: 8 }}>
+          {sponsor.logo ? (
+            <img src={sponsor.logo} alt={sponsor.name} style={{ display: 'block', height: 50, objectFit: 'contain' }} />
+          ) : (
+            <div style={{ fontFamily: theme.serif, fontSize: 20, color: theme.ink }}>{sponsor.name}</div>
+          )}
+          {sponsor.tagline && (
+            <div style={{ fontFamily: theme.sans, fontSize: 11.5, color: theme.muted, lineHeight: 1.4, flex: '1 1 200px' }}>{sponsor.tagline}</div>
+          )}
+          {sponsor.url && (
+            <div style={{ fontFamily: theme.sans, fontSize: 11.5, fontWeight: 700, color: theme.navy, whiteSpace: 'nowrap', marginLeft: 'auto' }}>
+              Plan your visit <span aria-hidden="true">→</span>
+            </div>
+          )}
+        </div>
+      </Box>
+    )
+  }
 
   return (
     <Box
