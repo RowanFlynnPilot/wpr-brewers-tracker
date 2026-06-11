@@ -1,3 +1,4 @@
+import { resolve } from 'path'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
@@ -6,4 +7,13 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   base: '/wpr-brewers-tracker/',
+  build: {
+    rollupOptions: {
+      input: {
+        main: resolve(__dirname, 'index.html'),
+        // Compact scoreboard for sidebars/articles — its own page so embeds stay lightweight.
+        mini: resolve(__dirname, 'mini.html'),
+      },
+    },
+  },
 })

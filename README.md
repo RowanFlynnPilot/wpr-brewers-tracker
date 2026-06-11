@@ -48,6 +48,21 @@ The `height` is a taste knob — bigger shows more before the inner scrollbar ta
 Embedded views are tracked automatically (they appear in Plausible with
 wausaupilotandreview.com as the source).
 
+### Mini scoreboard (sidebar / in-article)
+
+A compact featured-game card at `/mini.html` — the whole card is a link into the full
+tracker. Once the full tracker has a page on the news site, set that page's URL in the
+`to` parameter; without it, the card links to the standalone tracker.
+
+```html
+<iframe src="https://rowanflynnpilot.github.io/wpr-brewers-tracker/mini.html?to=https://wausaupilotandreview.com/YOUR-TRACKER-PAGE/"
+        style="width:100%;border:0;height:240px" loading="lazy"
+        title="Brewers scoreboard — tap for the full tracker"></iframe>
+```
+
+Mini impressions show in Plausible as the `/wpr-brewers-tracker/mini.html` page;
+clicks fire a `Mini Click` event (add it as a goal to report on it).
+
 ## Configure
 
 Everything tweakable lives in `src/config.js`: season, team, division, sponsor strings,
