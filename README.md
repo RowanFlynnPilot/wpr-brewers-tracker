@@ -34,11 +34,19 @@ Live URL: `https://rowanflynnpilot.github.io/wpr-brewers-tracker/`
 
 ## Embed
 
+Paste into a WordPress **Custom HTML** block:
+
 ```html
 <iframe src="https://rowanflynnpilot.github.io/wpr-brewers-tracker/"
-        style="width:100%;border:0;min-height:1600px" loading="lazy"
-        title="The Brewers, by the numbers"></iframe>
+        style="width:100%;border:0;height:2600px" loading="lazy"
+        allow="web-share; clipboard-write"
+        title="The Brewers, by the numbers — live stats tracker"></iframe>
 ```
+
+The `height` is a taste knob — bigger shows more before the inner scrollbar takes over.
+`allow` lets the share button use the native share sheet / clipboard inside the iframe.
+Embedded views are tracked automatically (they appear in Plausible with
+wausaupilotandreview.com as the source).
 
 ## Configure
 
