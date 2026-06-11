@@ -13,6 +13,17 @@ export const TEAM_ABBR = { 158: 'MIL', 138: 'STL', 134: 'PIT', 112: 'CHC', 113: 
 // Calmer, distinct hues for the rivals so the navy Brewers line stays the focus.
 export const TEAM_COLORS = { 158: '#12284b', 138: '#a23b46', 134: '#c08a2e', 112: '#4e72a8', 113: '#6f9e6a' }
 
+// Accent hue per MLB club for the mini scoreboard's split top edge — each team's most
+// recognizable color, tuned to read against Brewers navy. Decorative, not official marks.
+export const TEAM_ACCENT = {
+  108: '#ba0021', 109: '#a71930', 110: '#df4601', 111: '#bd3039', 112: '#0e3386',
+  113: '#c6011f', 114: '#e31937', 115: '#5e5ba0', 116: '#fa4616', 117: '#eb6e1f',
+  118: '#004687', 119: '#005a9c', 120: '#ab0003', 121: '#ff5910', 133: '#014a35',
+  134: '#27251f', 135: '#2f241d', 136: '#005c5c', 137: '#fd5a1e', 138: '#c41e3a',
+  139: '#8fbce6', 140: '#c0111f', 141: '#134a8e', 142: '#d31145', 143: '#e81828',
+  144: '#ce1141', 145: '#27251f', 146: '#00a3e0', 147: '#1c2841', 158: '#12284b',
+}
+
 // Brewers logo is referenced from MLB's official CDN, not redrawn.
 // A team mark on a sponsored surface can imply endorsement — set false for a colors-only header
 // if WPR/MLB sign-off isn't in hand.

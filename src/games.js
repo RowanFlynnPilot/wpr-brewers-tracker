@@ -34,6 +34,44 @@ export function recentResults(schedules, teamId, n = 10) {
   return finals(team.dates, teamId).slice(-n).map((g) => g.won)
 }
 
+// The Brewers' standout performer from a box score — best batting OR pitching line, scored on
+// simple heuristics (extra bases, RBI, innings, strikeouts, decisions). Returns
+// { id, name, line } like { name: 'William Contreras', line: '3-for-4, 2 HR, 4 RBI' },
+// or null when nobody clears the bar (a quiet game shouldn't headline anyone).
+export function playerOfTheGame(box) {
+  const side = box.teams.home.team.id === TEAM_ID ? 'home' : 'away'
+  const t = box.teams[side]
+  let best = null
+  const push = (score, person, line) => {
+    if (score > 2.5 && score > (best?.score ?? -1)) best = { score, id: person.id, name: person.fullName, line }
+  }
+
+  t.batters.map((id) => t.players['ID' + id]).forEach((p) => {
+    const s = p?.stats?.batting
+    if (!s || (!s.atBats && !s.baseOnBalls)) return
+    const singles = s.hits - s.doubles - s.triples - s.homeRuns
+    const score = singles + 1.5 * s.doubles + 2 * s.triples + 3 * s.homeRuns + s.rbi + 0.5 * s.runs + 0.3 * s.baseOnBalls + 0.5 * (s.stolenBases || 0)
+    const bits = [`${s.hits}-for-${s.atBats}`]
+    if (s.homeRuns) bits.push(s.homeRuns > 1 ? `${s.homeRuns} HR` : 'HR')
+    if (s.rbi) bits.push(`${s.rbi} RBI`)
+    if (s.runs > 1) bits.push(`${s.runs} R`)
+    if (s.stolenBases) bits.push(`${s.stolenBases} SB`)
+    push(score, p.person, bits.join(', '))
+  })
+
+  t.pitchers.map((id) => t.players['ID' + id]).forEach((p) => {
+    const s = p?.stats?.pitching
+    if (!s || !s.inningsPitched) return
+    const decision = s.note && s.note.match(/\((W|L|S)/)
+    const score = parseFloat(s.inningsPitched) + 0.4 * s.strikeOuts - 1.8 * s.earnedRuns + (decision && decision[1] !== 'L' ? 2 : 0)
+    const bits = [`${s.inningsPitched} IP`, `${s.earnedRuns} ER`, `${s.strikeOuts} K`]
+    if (decision && decision[1] !== 'L') bits.push(decision[1] === 'W' ? 'W' : 'SV')
+    push(score, p.person, bits.join(', '))
+  })
+
+  return best
+}
+
 // Series framing over the team-schedule feed ({date, game} rows): short lines for the last
 // completed series and the one in progress, e.g. "Won 2 of 3 vs the Cubs" · "Up 1–0 on the
 // Athletics". Series whose first game falls outside the window are skipped (can't score them).

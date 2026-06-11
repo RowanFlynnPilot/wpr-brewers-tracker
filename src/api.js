@@ -148,11 +148,16 @@ export async function fetchDecisivePlay(gamePk) {
   return { batter: decisive.matchup?.batter?.fullName || null, description: decisive.result?.description || null }
 }
 
+// Box score alone — the mini scoreboard's player-of-the-game needs just this.
+export async function fetchBoxscore(gamePk) {
+  return getJSON(`/game/${gamePk}/boxscore`)
+}
+
 // Full box score for one game: player batting/pitching lines + the inning-by-inning linescore.
 // Fetched on demand when a schedule card is opened.
 export async function fetchGameBox(gamePk) {
   const [box, line] = await Promise.all([
-    getJSON(`/game/${gamePk}/boxscore`),
+    fetchBoxscore(gamePk),
     getJSON(`/game/${gamePk}/linescore`),
   ])
   return { box, line }
