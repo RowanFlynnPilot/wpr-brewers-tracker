@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { theme } from '../theme.js'
 import { TEAM_ID, SPONSORS, SITE_URL } from '../config.js'
-import { fetchFeaturedGame } from '../api.js'
+import { fetchFeaturedGame, fetchPitcherSeason } from '../api.js'
+import { fetchFirstPitchForecast } from '../weather.js'
 import { track } from '../analytics.js'
 import TeamLogo from './TeamLogo.jsx'
 
@@ -15,17 +16,27 @@ function destination() {
   return to && /^https?:\/\//i.test(to) ? to : SITE_URL
 }
 
+// "Misiorowski (7-0, 1.50)" — the broadcast notation for a probable's record + ERA.
+const pitcherLine = (pitcher, stat) => {
+  const last = pitcher.fullName.split(' ').pop()
+  return stat ? `${last} (${stat.wins}-${stat.losses}, ${stat.era})` : last
+}
+
 // Compact featured-game scoreboard for sidebars/articles. The whole card is one link into the
 // full tracker (target=_top so it navigates the page hosting the iframe, not the iframe).
 // Self-contained and fail-soft: with no data it still renders a useful branded link.
 export default function MiniGame() {
   const [game, setGame] = useState(null)
+  const [pitchers, setPitchers] = useState(null) // { me, opp } season pitching stats
+  const [forecast, setForecast] = useState(null)
 
   const load = useCallback(() => {
     fetchFeaturedGame().then(setGame).catch(() => {})
   }, [])
 
-  const live = game?.status?.abstractGameState === 'Live'
+  const state = game?.status?.abstractGameState
+  const gamePk = game?.gamePk
+  const live = state === 'Live'
   useEffect(() => {
     load()
     const refresh = () => { if (!document.hidden) load() }
@@ -34,13 +45,38 @@ export default function MiniGame() {
     return () => { clearInterval(id); document.removeEventListener('visibilitychange', refresh) }
   }, [live, load])
 
+  // Probable pitchers' season lines + the first-pitch forecast (home games only, like the
+  // hero) — both upcoming-game extras, both fail-soft.
+  useEffect(() => {
+    setPitchers(null)
+    setForecast(null)
+    if (!game || state !== 'Preview') return
+    let alive = true
+    const home = game.teams.home.team.id === TEAM_ID
+    const a = game.teams[home ? 'home' : 'away'].probablePitcher
+    const b = game.teams[home ? 'away' : 'home'].probablePitcher
+    if (a && b) {
+      Promise.all([fetchPitcherSeason(a.id).catch(() => null), fetchPitcherSeason(b.id).catch(() => null)])
+        .then(([sa, sb]) => { if (alive) setPitchers({ me: sa, opp: sb }) })
+    }
+    if (home) fetchFirstPitchForecast(game.gameDate).then((f) => { if (alive) setForecast(f) }).catch(() => {})
+    return () => { alive = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- game object churns every poll; pk+state pin the fetch
+  }, [gamePk, state])
+
   const card = {
-    display: 'block', maxWidth: 420, margin: '0 auto', textDecoration: 'none',
+    display: 'block', maxWidth: 420, margin: '0 auto', textDecoration: 'none', overflow: 'hidden',
     background: '#fff', border: `1px solid ${theme.rule}`, borderTop: `3px solid ${theme.gold}`,
-    borderRadius: 8, padding: '12px 14px 10px', textAlign: 'center', fontFamily: theme.sans,
+    borderRadius: 8, textAlign: 'center', fontFamily: theme.sans,
   }
+  const band = (text) => (
+    <div style={{ background: theme.navy, color: '#fff', fontSize: 9.5, letterSpacing: '0.18em', fontWeight: 700, textTransform: 'uppercase', padding: '5px 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+      {live && <span className="live-dot" style={{ width: 7, height: 7, borderRadius: '50%', background: theme.gold, flexShrink: 0 }} />}
+      {text}
+    </div>
+  )
   const footer = (
-    <div style={{ borderTop: `1px solid ${theme.rule}`, marginTop: 10, paddingTop: 7, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
+    <div style={{ borderTop: `1px solid ${theme.rule}`, marginTop: 9, paddingTop: 7, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
       {SPONSORS.header ? (
         <span style={{ fontSize: 8.5, color: theme.muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           Presented by {SPONSORS.header.name}
@@ -52,21 +88,24 @@ export default function MiniGame() {
   const linkProps = {
     href: destination(),
     target: '_top',
-    onClick: () => track('Mini Click', { state: game?.status?.abstractGameState || 'none' }),
+    onClick: () => track('Mini Click', { state: state || 'none' }),
   }
 
   // No data (yet, or at all): a branded doorway rather than an empty box.
   if (!game) {
     return (
       <a {...linkProps} className="link-hover" style={card}>
-        <div style={{ fontFamily: theme.serif, fontSize: 18, color: theme.ink, padding: '14px 0 4px' }}>The Brewers, by the numbers</div>
-        <div style={{ fontSize: 11.5, color: theme.muted, paddingBottom: 6 }}>Live scores, standings and the division race</div>
-        {footer}
+        {band('Brewers tracker')}
+        <div style={{ padding: '9px 14px 10px' }}>
+          <div style={{ fontFamily: theme.serif, fontSize: 18, color: theme.ink, padding: '12px 0 4px' }}>The Brewers, by the numbers</div>
+          <div style={{ fontSize: 11.5, color: theme.muted, paddingBottom: 4 }}>Live scores, standings and the division race</div>
+          {footer}
+        </div>
       </a>
     )
   }
 
-  const final = game.status.abstractGameState === 'Final'
+  const final = state === 'Final'
   const home = game.teams.home.team.id === TEAM_ID
   const me = game.teams[home ? 'home' : 'away']
   const opp = game.teams[home ? 'away' : 'home']
@@ -76,12 +115,12 @@ export default function MiniGame() {
   const isToday = new Date(game.gameDate).toDateString() === new Date().toDateString()
 
   const kicker = live
-    ? `LIVE · ${`${ls.inningHalf || ''} ${ls.currentInningOrdinal || ''}`.trim().toUpperCase()}`
+    ? `${`${ls.inningHalf || ''} ${ls.currentInningOrdinal || ''}`.trim()}${ls.outs != null ? ` · ${ls.outs} out${ls.outs === 1 ? '' : 's'}` : ''}`.toUpperCase()
     : final
-    ? (won ? 'FINAL · BREWERS WIN' : 'FINAL')
+    ? `${new Date(game.gameDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase()}${won ? ' · BREWERS WIN' : ''}`
     : `${isToday ? 'TONIGHT' : new Date(game.gameDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase()} · ${new Date(game.gameDate).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
   const probables = !live && !final && me.probablePitcher && opp.probablePitcher
-    ? `${me.probablePitcher.fullName.split(' ').pop()} vs ${opp.probablePitcher.fullName.split(' ').pop()}`
+    ? `${pitcherLine(me.probablePitcher, pitchers?.me)} vs ${pitcherLine(opp.probablePitcher, pitchers?.opp)}`
     : null
 
   const TeamCol = ({ team, name, bold }) => (
@@ -93,25 +132,32 @@ export default function MiniGame() {
 
   return (
     <a {...linkProps} className="link-hover" style={card}>
-      <div style={{ fontSize: 10, letterSpacing: '0.14em', fontWeight: 700, color: live ? theme.gold : theme.muted, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-        {live && <span className="live-dot" style={{ width: 7, height: 7, borderRadius: '50%', background: theme.gold }} />}
-        {kicker}
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 10, margin: '8px 0 2px' }}>
-        <TeamCol team={me} name="Brewers" bold={won} />
-        {live || final ? (
-          <span style={{ fontFamily: theme.serif, fontSize: 26, color: theme.ink, whiteSpace: 'nowrap' }}>
-            <span style={{ fontWeight: won ? 700 : 400, color: won ? theme.navy : theme.ink }}>{me.score}</span>
-            <span style={{ fontSize: 16, color: theme.muted }}> – </span>
-            {opp.score}
-          </span>
-        ) : (
-          <span style={{ fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: theme.muted }}>{home ? 'vs' : 'at'}</span>
+      {band(live ? 'Current game' : final ? 'Final score' : 'Upcoming game')}
+      <div style={{ padding: '9px 14px 10px' }}>
+        <div style={{ fontSize: 10, letterSpacing: '0.14em', fontWeight: 700, color: live ? theme.gold : theme.muted }}>
+          {kicker}
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 10, margin: '7px 0 2px' }}>
+          <TeamCol team={me} name="Brewers" bold={won} />
+          {live || final ? (
+            <span style={{ fontFamily: theme.serif, fontSize: 26, color: theme.ink, whiteSpace: 'nowrap' }}>
+              <span style={{ fontWeight: won ? 700 : 400, color: won ? theme.navy : theme.ink }}>{me.score}</span>
+              <span style={{ fontSize: 16, color: theme.muted }}> – </span>
+              {opp.score}
+            </span>
+          ) : (
+            <span style={{ fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: theme.muted }}>{home ? 'vs' : 'at'}</span>
+          )}
+          <TeamCol team={opp} name={oppName} />
+        </div>
+        {probables && <div style={{ fontSize: 11, color: theme.muted, lineHeight: 1.45 }}>{probables}</div>}
+        {forecast && (
+          <div style={{ fontSize: 10.5, color: theme.muted, marginTop: 3 }}>
+            First pitch: {forecast.tempF}°F, {forecast.label} · {forecast.precipPct}% rain
+          </div>
         )}
-        <TeamCol team={opp} name={oppName} />
+        {footer}
       </div>
-      {probables && <div style={{ fontSize: 11, color: theme.muted }}>{probables}</div>}
-      {footer}
     </a>
   )
 }
