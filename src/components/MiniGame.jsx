@@ -147,11 +147,19 @@ export default function MiniGame() {
       {text}
     </div>
   )
+  // Sponsor credit with the logo. The whole card is one link to the tracker, so the logo is an
+  // impression here — the clickable sponsor lockups live on the full page it leads to.
   const footer = (
-    <div style={{ borderTop: `1px solid ${theme.rule}`, marginTop: 9, paddingTop: 7, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
+    <div style={{ borderTop: `1px solid ${theme.rule}`, marginTop: 9, paddingTop: 7, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
       {SPONSORS.header ? (
-        <span style={{ fontSize: 8.5, color: theme.muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          Presented by {SPONSORS.header.name}
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
+          <span style={{ fontSize: 8, letterSpacing: '0.12em', fontWeight: 700, color: theme.gold, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>Presented by</span>
+          {SPONSORS.header.logo ? (
+            <img src={SPONSORS.header.logo} alt={SPONSORS.header.name} style={{ height: 22, objectFit: 'contain', display: 'block' }}
+              onError={(e) => { e.currentTarget.style.display = 'none' }} />
+          ) : (
+            <span style={{ fontSize: 8.5, color: theme.muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{SPONSORS.header.name}</span>
+          )}
         </span>
       ) : <span />}
       <span style={{ fontSize: 11, fontWeight: 700, color: theme.navy, whiteSpace: 'nowrap' }}>Full tracker {'→'}</span>
