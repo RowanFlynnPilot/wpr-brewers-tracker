@@ -51,11 +51,11 @@ wausaupilotandreview.com as the source).
 ### Mini scoreboard (sidebar / in-article)
 
 A compact featured-game card at `/mini.html` — the whole card is a link into the full
-tracker. Once the full tracker has a page on the news site, set that page's URL in the
-`to` parameter; without it, the card links to the standalone tracker.
+tracker. The `to` parameter sets where a tap lands (the tracker's page on the news site);
+without it, the card links to the standalone tracker.
 
 ```html
-<iframe src="https://rowanflynnpilot.github.io/wpr-brewers-tracker/mini.html?to=https://wausaupilotandreview.com/YOUR-TRACKER-PAGE/"
+<iframe src="https://rowanflynnpilot.github.io/wpr-brewers-tracker/mini.html?to=https://wausaupilotandreview.com/milwaukee-brewers/"
         style="width:100%;border:0;height:280px" loading="lazy"
         title="Brewers scoreboard — tap for the full tracker"></iframe>
 ```
