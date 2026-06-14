@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { theme } from '../theme.js'
 import { headshot } from '../config.js'
 import { fetchSeasonHomeRuns } from '../api.js'
-import { homeRunsByPlayer } from '../games.js'
+import { homeRunsByPlayer, parksEstimate } from '../games.js'
 import { useIsNarrow } from '../useIsNarrow.js'
 import { Loading } from './Status.jsx'
 
@@ -50,6 +50,10 @@ function Field({ hrs }) {
           <div style={{ fontFamily: theme.sans, fontSize: 11, color: theme.muted, marginTop: 2 }}>
             {hover.h.ev != null ? `${hover.h.ev} mph · ` : ''}{hover.h.la != null ? `${hover.h.la}° · ` : ''}{shortDate(hover.h.date)}{hover.h.opp ? ` ${hover.h.isHome ? 'vs' : '@'} ${hover.h.opp}` : ''}
           </div>
+          {(() => {
+            const pk = parksEstimate(hover.h)
+            return pk != null ? <div style={{ fontFamily: theme.sans, fontSize: 11, color: theme.ink, marginTop: 2 }}>Out in ~{pk}/30 parks <span style={{ color: theme.muted }}>(est.)</span></div> : null
+          })()}
         </div>
       )}
     </div>
@@ -111,6 +115,9 @@ export default function HomeRuns() {
           <div style={{ fontFamily: theme.sans, fontSize: 11, color: theme.muted, textAlign: 'center', marginTop: 2 }}>
             {player.name} · {player.count} HR{player.avgDist != null ? ` · ${player.avgDist} ft avg` : ''}
             {longest?.dist != null ? <> · Longest <span style={{ color: theme.navy, fontWeight: 700 }}>{longest.dist} ft</span></> : null}
+          </div>
+          <div style={{ fontFamily: theme.sans, fontSize: 10, color: theme.muted, textAlign: 'center', marginTop: 4, fontStyle: 'italic' }}>
+            Hover a homer for details. Park estimate is by distance &amp; spray direction — not official Statcast.
           </div>
         </div>
 

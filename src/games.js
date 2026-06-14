@@ -1,5 +1,32 @@
 // Derivations over division schedules (the same feed the race chart uses). Pure functions — no fetching.
-import { TEAM_ID } from './config.js'
+import { TEAM_ID, PARK_DISTANCES } from './config.js'
+
+// Estimated number of the 30 parks a home run would clear, by distance + spray direction (NOT
+// official Statcast — ignores wall height/trajectory). Spray angle: 0 = dead center, ±45 = the
+// foul lines; fence distance interpolated between the five marked zones at that angle. Returns
+// null when the HR lacks distance or landing coordinates.
+const ANGLES = [-45, -22.5, 0, 22.5, 45]
+function fenceAt(zones, theta) {
+  if (theta <= ANGLES[0]) return zones[0]
+  if (theta >= ANGLES[4]) return zones[4]
+  for (let i = 0; i < 4; i++) {
+    if (theta <= ANGLES[i + 1]) {
+      const t = (theta - ANGLES[i]) / (ANGLES[i + 1] - ANGLES[i])
+      return zones[i] + (zones[i + 1] - zones[i]) * t
+    }
+  }
+  return zones[2]
+}
+export function parksEstimate(hr) {
+  if (hr.dist == null || hr.coordX == null || hr.coordY == null) return null
+  const dx = hr.coordX - 125 // home plate ≈ x 125; +x toward right field
+  const dyOut = 205 - hr.coordY // +y toward the outfield
+  if (dyOut <= 0) return null
+  const theta = Math.max(-45, Math.min(45, (Math.atan2(dx, dyOut) * 180) / Math.PI))
+  let count = 0
+  for (const zones of Object.values(PARK_DISTANCES)) if (hr.dist >= fenceAt(zones, theta)) count++
+  return Math.max(1, count) // it cleared at least the park it was hit in
+}
 
 // A team's completed regular-season games in date order, each flagged won/lost with the score
 // + opponent. abstractGameState (not detailedState) so "Game Over"/"Completed Early" count too;

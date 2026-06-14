@@ -23,6 +23,23 @@ export const TEAM_NAMES = {
   143: 'Phillies', 144: 'Braves', 145: 'White Sox', 146: 'Marlins', 147: 'Yankees', 158: 'Brewers',
 }
 
+// Marked outfield fence distances (ft) per park, by zone [LF line, LF gap, CF, RF gap, RF line],
+// keyed by the home team's id. Public, stable signage figures — used only for the home run
+// tracker's *estimated* "out in N/30 parks" (distance + spray direction vs these fences; it does
+// not model wall height or trajectory, so it won't always match Statcast's official figure).
+export const PARK_DISTANCES = {
+  108: [330, 387, 396, 370, 330], 109: [330, 374, 407, 374, 334], 110: [333, 384, 400, 373, 318],
+  111: [310, 379, 390, 420, 302], 112: [355, 368, 400, 368, 353], 113: [328, 379, 404, 370, 325],
+  114: [325, 370, 405, 375, 325], 115: [347, 390, 415, 375, 350], 116: [345, 370, 420, 365, 330],
+  117: [315, 362, 409, 373, 326], 118: [330, 387, 410, 387, 330], 119: [330, 385, 395, 385, 330],
+  120: [336, 377, 402, 370, 335], 121: [335, 379, 408, 383, 330], 133: [330, 388, 400, 388, 330],
+  134: [325, 383, 399, 375, 320], 135: [336, 367, 396, 387, 322], 136: [331, 378, 401, 381, 326],
+  137: [339, 364, 399, 415, 309], 138: [336, 375, 400, 375, 335], 139: [315, 370, 404, 370, 322],
+  140: [329, 372, 407, 374, 326], 141: [328, 375, 400, 375, 328], 142: [339, 377, 404, 367, 328],
+  143: [329, 374, 401, 369, 330], 144: [335, 385, 400, 375, 325], 145: [330, 377, 400, 372, 335],
+  146: [344, 386, 400, 387, 335], 147: [318, 399, 408, 385, 314], 158: [344, 371, 400, 374, 345],
+}
+
 // Accent hue per MLB club for the mini scoreboard's split top edge — each team's most
 // recognizable color, tuned to read against Brewers navy. Decorative, not official marks.
 export const TEAM_ACCENT = {
