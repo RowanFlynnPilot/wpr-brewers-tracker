@@ -197,6 +197,35 @@ export async function fetchLiveExtras(gamePk) {
   }
 }
 
+// Completed regular-season Brewers games, newest first — the strikeout tracker's game picker.
+export async function fetchSeasonFinals() {
+  const data = await getJSON(`/schedule?sportId=1&teamId=${TEAM_ID}&startDate=${SEASON}-03-01&endDate=${today()}&hydrate=team`)
+  const seen = new Set() // a suspended/resumed game can appear under two dates — keep it once
+  const games = data.dates
+    .flatMap((d) => d.games)
+    .filter((g) => g.gameType === 'R' && g.status.abstractGameState === 'Final')
+    .filter((g) => (seen.has(g.gamePk) ? false : seen.add(g.gamePk)))
+    .map((g) => {
+      const home = g.teams.home.team.id === TEAM_ID
+      const opp = (home ? g.teams.away : g.teams.home).team
+      return {
+        gamePk: g.gamePk,
+        date: g.officialDate || g.gameDate.slice(0, 10),
+        home,
+        oppName: opp.teamName || opp.name.replace('Milwaukee ', ''),
+        me: g.teams[home ? 'home' : 'away'].score,
+        them: g.teams[home ? 'away' : 'home'].score,
+      }
+    })
+  return games.reverse()
+}
+
+// Raw play-by-play for one game (strikeout tracker derives pitch-level data from this).
+export async function fetchPlayByPlay(gamePk) {
+  const data = await getJSON(`/game/${gamePk}/playByPlay`)
+  return data.allPlays || []
+}
+
 // Active roster with season stats hydrated in a single call.
 export async function fetchRosterStats() {
   const data = await getJSON(`/teams/${TEAM_ID}/roster?rosterType=active&hydrate=person(stats(type=season,season=${SEASON}))`)

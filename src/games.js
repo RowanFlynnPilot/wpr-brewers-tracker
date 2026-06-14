@@ -34,6 +34,38 @@ export function recentResults(schedules, teamId, n = 10) {
   return finals(team.dates, teamId).slice(-n).map((g) => g.won)
 }
 
+// Brewers strikeouts in a game, grouped by pitcher, each with its final (put-away) pitch.
+// `pitchingHalf` is the half-inning the Brewers pitch in ('top' when home, 'bottom' when away),
+// which isolates Brewers pitchers from the opponent's. Pitchers sorted by K count (most first);
+// each pitcher's strikeouts stay in chronological order.
+export function gameStrikeouts(allPlays, pitchingHalf) {
+  const ks = (allPlays || []).filter((p) => p.result?.eventType === 'strikeout' && p.about?.halfInning === pitchingHalf)
+  const byId = new Map()
+  ks.forEach((p) => {
+    const last = (p.playEvents || []).filter((e) => e.isPitch).pop()
+    const pd = last?.pitchData
+    const det = last?.details
+    const call = det?.call?.description || ''
+    const id = p.matchup.pitcher.id
+    if (!byId.has(id)) byId.set(id, { id, name: p.matchup.pitcher.fullName, strikeouts: [] })
+    byId.get(id).strikeouts.push({
+      batter: p.matchup.batter.fullName,
+      batSide: p.matchup.batSide?.code || '',
+      inning: p.about.inning,
+      mph: pd?.startSpeed ?? null,
+      type: det?.type?.description || 'Pitch',
+      typeCode: det?.type?.code || '',
+      call,
+      looking: call === 'Called Strike',
+      pX: pd?.coordinates?.pX ?? null,
+      pZ: pd?.coordinates?.pZ ?? null,
+      szTop: pd?.strikeZoneTop ?? null,
+      szBot: pd?.strikeZoneBottom ?? null,
+    })
+  })
+  return [...byId.values()].sort((a, b) => b.strikeouts.length - a.strikeouts.length)
+}
+
 // The Brewers' standout performer from a box score — best batting OR pitching line, scored on
 // simple heuristics (extra bases, RBI, innings, strikeouts, decisions). Returns
 // { id, name, line } like { name: 'William Contreras', line: '3-for-4, 2 HR, 4 RBI' },
