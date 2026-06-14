@@ -301,6 +301,7 @@ export async function fetchSeasonBattedBalls() {
         event: p.result?.eventType || '',
         dist: ev.hitData.totalDistance ?? null,
         ev: ev.hitData.launchSpeed ?? null,
+        gamePk: r.gamePk,
         date: m.date,
         opp: m.opp,
         home: m.home,

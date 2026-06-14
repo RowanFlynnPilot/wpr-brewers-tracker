@@ -111,6 +111,7 @@ export default function Spray() {
   const counts = ORDER.reduce((m, k) => ({ ...m, [k]: 0 }), {})
   shown.forEach((b) => { counts[cat(b.event)]++ })
   const hits = counts.HR + counts['3B'] + counts['2B'] + counts['1B']
+  const gp = new Set(shown.map((b) => b.gamePk)).size // games with a ball in play (doubleheader-safe)
 
   const selectStyle = {
     fontFamily: theme.sans, fontSize: 13, color: theme.navy, background: '#fff',
@@ -138,7 +139,7 @@ export default function Spray() {
         <div style={{ flex: narrow ? '1 1 100%' : '0 0 360px' }}>
           <Field balls={shown} />
           <div style={{ fontFamily: theme.sans, fontSize: 11, color: theme.muted, textAlign: 'center', marginTop: 2 }}>
-            {player.name} · {periodLabel} · {shown.length} balls in play · <span style={{ color: theme.navy, fontWeight: 700 }}>{hits} hits</span>
+            {player.name} · {periodLabel} · {gp} {gp === 1 ? 'game' : 'games'} · {shown.length} {shown.length === 1 ? 'ball' : 'balls'} in play · <span style={{ color: theme.navy, fontWeight: 700 }}>{hits} {hits === 1 ? 'hit' : 'hits'}</span>
           </div>
           {!shown.length && (
             <div style={{ fontFamily: theme.sans, fontSize: 12.5, color: theme.muted, textAlign: 'center', marginTop: 6 }}>No balls in play in this span.</div>
