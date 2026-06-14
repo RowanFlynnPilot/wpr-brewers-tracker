@@ -1,17 +1,31 @@
 import { theme } from '../theme.js'
 import { headshot } from '../config.js'
 
+const ord = (n) => { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]) }
+const CAT_LABEL = { homeRuns: 'home runs', runsBattedIn: 'RBI', hits: 'hits', stolenBases: 'steals', wins: 'wins', strikeouts: 'strikeouts', saves: 'saves' }
+
 // Find players sitting just short of a round-number milestone, from the season roster stats we
-// already have. Pure — returns up to 4 "on the verge" items, nearest milestone first, one per player.
-export function milestoneWatch(roster) {
+// already have. Each item carries a detail line (current production) and, when `leaders` is
+// supplied, a league-context note (e.g. "tied for the MLB lead in wins"). Pure — returns up to 4
+// "on the verge" items, nearest milestone first, one per player.
+export function milestoneWatch(roster, leaders = null) {
+  // League rank phrase for a player in a category, or '' if not among the leaders.
+  const note = (cat, id) => {
+    const e = leaders?.[cat]?.[id]
+    if (!e) return ''
+    const label = CAT_LABEL[cat]
+    if (e.rank === 1) return e.tied ? `tied for the MLB lead in ${label}` : `leads MLB in ${label}`
+    if (e.rank <= 5) return `${ord(e.rank)} in MLB in ${label}`
+    return ''
+  }
   const items = []
-  const consider = (id, name, value, unit, step, maxNeed, plural) => {
+  const add = (id, name, value, unit, step, maxNeed, plural, cat, detail) => {
     if (value == null || value < step) return
     const next = Math.floor(value / step) * step + step
     const need = next - value
     if (need > 0 && need <= maxNeed) {
       const u = plural && need !== 1 ? `${unit}s` : unit
-      items.push({ id, name, need, text: `needs ${need} ${u} for ${next}` })
+      items.push({ id, name, need, text: `needs ${need} ${u} for ${next}`, detail, note: note(cat, id) })
     }
   }
   roster.forEach((p) => {
@@ -20,15 +34,16 @@ export function milestoneWatch(roster) {
       const st = s.splits?.[0]?.stat
       if (!st) return
       if (s.group.displayName === 'hitting' && st.atBats > 60) {
-        consider(person.id, person.fullName, st.homeRuns, 'HR', 5, 2, false)
-        consider(person.id, person.fullName, st.rbi, 'RBI', 25, 4, false)
-        consider(person.id, person.fullName, st.hits, 'hit', 25, 4, true)
-        consider(person.id, person.fullName, st.stolenBases, 'SB', 5, 2, false)
+        add(person.id, person.fullName, st.homeRuns, 'HR', 5, 2, false, 'homeRuns', `${st.homeRuns} home runs`)
+        add(person.id, person.fullName, st.rbi, 'RBI', 25, 4, false, 'runsBattedIn', `${st.rbi} RBI`)
+        add(person.id, person.fullName, st.hits, 'hit', 25, 4, true, 'hits', `${st.hits} hits`)
+        add(person.id, person.fullName, st.stolenBases, 'SB', 5, 2, false, 'stolenBases', `${st.stolenBases} steals`)
       }
       if (s.group.displayName === 'pitching' && parseFloat(st.inningsPitched) > 20) {
-        consider(person.id, person.fullName, st.wins, 'win', 5, 1, true)
-        consider(person.id, person.fullName, st.strikeOuts, 'K', 25, 5, false)
-        consider(person.id, person.fullName, st.saves, 'save', 5, 2, true)
+        const reliever = (st.gamesStarted || 0) <= 3 && (st.gamesPlayed || 0) >= 10
+        add(person.id, person.fullName, st.wins, 'win', 5, 1, true, 'wins', `${st.wins}–${st.losses}${reliever ? ' out of the bullpen' : ''}`)
+        add(person.id, person.fullName, st.strikeOuts, 'K', 25, 5, false, 'strikeouts', `${st.strikeOuts} strikeouts`)
+        add(person.id, person.fullName, st.saves, 'save', 5, 2, true, 'saves', `${st.saves} saves`)
       }
     })
   })
@@ -44,17 +59,25 @@ export function milestoneWatch(roster) {
   return out
 }
 
-// "On the verge" cards — a daily-changing hook of players nearing milestones.
+// "On the verge" cards — a daily-changing hook of players nearing milestones, each with a
+// production detail line and (when available) a league-context note.
 export default function MilestoneWatch({ items }) {
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12 }}>
       {items.map((it) => (
-        <span key={it.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 9, border: `1px solid ${theme.rule}`, borderLeft: `3px solid ${theme.gold}`, borderRadius: 6, padding: '7px 12px', background: theme.wash }}>
-          <img src={headshot(it.id)} alt="" width={28} height={28} style={{ borderRadius: '50%', objectFit: 'cover', background: '#fff', flexShrink: 0 }} onError={(e) => { e.currentTarget.style.visibility = 'hidden' }} />
-          <span style={{ fontFamily: theme.sans, fontSize: 13, whiteSpace: 'nowrap' }}>
-            <span style={{ fontWeight: 700, color: theme.ink }}>{it.name}</span> <span style={{ color: theme.muted }}>{it.text}</span>
-          </span>
-        </span>
+        <div key={it.id} style={{ display: 'flex', alignItems: 'center', gap: 11, border: `1px solid ${theme.rule}`, borderLeft: `3px solid ${theme.gold}`, borderRadius: 6, padding: '11px 13px', background: theme.wash }}>
+          <img src={headshot(it.id)} alt="" width={40} height={40} style={{ borderRadius: '50%', objectFit: 'cover', background: '#fff', flexShrink: 0 }} onError={(e) => { e.currentTarget.style.visibility = 'hidden' }} />
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontFamily: theme.serif, fontSize: 15, fontWeight: 700, color: theme.ink, lineHeight: 1.15 }}>{it.name}</div>
+            <div style={{ fontFamily: theme.sans, fontSize: 12, color: theme.muted, marginTop: 1 }}>{it.text}</div>
+            {it.detail && (
+              <div style={{ fontFamily: theme.sans, fontSize: 11.5, marginTop: 3, lineHeight: 1.35 }}>
+                <span style={{ color: theme.ink }}>{it.detail}</span>
+                {it.note && <span style={{ color: theme.navy, fontWeight: 700 }}> · {it.note}</span>}
+              </div>
+            )}
+          </div>
+        </div>
       ))}
     </div>
   )

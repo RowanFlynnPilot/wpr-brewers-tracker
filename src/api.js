@@ -197,6 +197,24 @@ export async function fetchLiveExtras(gamePk) {
   }
 }
 
+// MLB-wide leaders for the milestone-watch categories → { category: { personId: {rank, value, tied} } }.
+// Lets the milestone chips add league context ("tied for the MLB lead in wins").
+export async function fetchLeagueLeaders() {
+  const [hit, pit] = await Promise.all([
+    getJSON(`/stats/leaders?leaderCategories=homeRuns,runsBattedIn,hits,stolenBases&season=${SEASON}&sportId=1&statGroup=hitting&limit=10`),
+    getJSON(`/stats/leaders?leaderCategories=wins,strikeouts,saves&season=${SEASON}&sportId=1&statGroup=pitching&limit=10`),
+  ])
+  const map = {}
+  ;[...(hit.leagueLeaders || []), ...(pit.leagueLeaders || [])].forEach((c) => {
+    const atRank = {}
+    c.leaders.forEach((l) => { atRank[l.rank] = (atRank[l.rank] || 0) + 1 })
+    const byPerson = {}
+    c.leaders.forEach((l) => { byPerson[l.person.id] = { rank: l.rank, value: l.value, tied: atRank[l.rank] > 1 } })
+    map[c.leaderCategory] = byPerson
+  })
+  return map
+}
+
 // Completed regular-season Brewers games, newest first — the strikeout tracker's game picker.
 export async function fetchSeasonFinals() {
   const data = await getJSON(`/schedule?sportId=1&teamId=${TEAM_ID}&startDate=${SEASON}-03-01&endDate=${today()}&hydrate=team`)

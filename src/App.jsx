@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, lazy, Suspense } from 'react'
 import { theme } from './theme.js'
 import { SPONSOR_DISCLAIMER, WATCH_PARTY, WPR_NEWS } from './config.js'
-import { fetchStandingsBundle, fetchDivisionSchedules, fetchRosterStats } from './api.js'
+import { fetchStandingsBundle, fetchDivisionSchedules, fetchRosterStats, fetchLeagueLeaders } from './api.js'
 import { lastFinalGame } from './games.js'
 import { initAnalytics } from './analytics.js'
 import Masthead from './components/Masthead.jsx'
@@ -54,6 +54,7 @@ export default function App() {
   const [schedules, setSchedules] = useState(null)
   const [ranks, setRanks] = useState(null)
   const [roster, setRoster] = useState(null)
+  const [leaders, setLeaders] = useState(null)
   const [updatedAt, setUpdatedAt] = useState(null)
   // Per-feed failure flags so a failed FIRST load shows an error state instead of an eternal
   // skeleton. Once a feed has data, later failures keep the prior data (flag cleared on success).
@@ -67,6 +68,7 @@ export default function App() {
       .catch(() => flag('standings', true))
     fetchDivisionSchedules().then((s) => { setSchedules(s); flag('schedules', false) }).catch(() => flag('schedules', true))
     fetchRosterStats().then((r) => { setRoster(r); flag('roster', false) }).catch(() => flag('roster', true))
+    fetchLeagueLeaders().then(setLeaders).catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -79,7 +81,7 @@ export default function App() {
   }, [load])
 
   const lastGame = schedules ? lastFinalGame(schedules) : null
-  const milestones = roster ? milestoneWatch(roster) : []
+  const milestones = roster ? milestoneWatch(roster, leaders) : []
 
   return (
     <div style={{ background: theme.paper, color: theme.ink, minHeight: '100vh' }}>
