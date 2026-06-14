@@ -174,8 +174,8 @@ export default function Strikeouts() {
               })}
             </div>
             <div style={{ fontFamily: theme.sans, fontSize: 10.5, color: theme.muted, textAlign: 'center', marginTop: 6 }}>
-              <span style={{ display: 'inline-block', width: 9, height: 9, borderRadius: '50%', background: theme.muted, marginRight: 4, verticalAlign: -1 }} />swinging
-              <span style={{ display: 'inline-block', width: 9, height: 9, borderRadius: '50%', background: '#fff', border: `2px solid ${theme.muted}`, margin: '0 4px 0 12px', verticalAlign: -1 }} />looking
+              <span style={{ display: 'inline-block', width: 9, height: 9, borderRadius: '50%', background: theme.muted, marginRight: 4, verticalAlign: -1 }} />Swinging
+              <span style={{ display: 'inline-block', width: 9, height: 9, borderRadius: '50%', background: '#fff', border: `2px solid ${theme.muted}`, margin: '0 4px 0 12px', verticalAlign: -1 }} />Looking
             </div>
           </div>
 
@@ -195,7 +195,7 @@ export default function Strikeouts() {
                   <span style={{ minWidth: 0 }}>
                     <span style={{ fontSize: 13, color: theme.ink, fontWeight: 700 }}>{k.batter}</span>
                     <span style={{ fontSize: 12, color: theme.muted }}> ({k.batSide})</span>
-                    <span style={{ fontSize: 12, color: theme.muted }}> · {k.looking ? 'looking' : 'swinging'}</span>
+                    <span style={{ fontSize: 12, color: theme.muted }}> · {k.looking ? 'Looking' : 'Swinging'}</span>
                     <br />
                     <span style={{ fontSize: 12, color: theme.muted }}>
                       {k.mph != null ? `${k.mph} mph ` : ''}{k.type} · {k.inning === 1 ? '1st' : k.inning === 2 ? '2nd' : k.inning === 3 ? '3rd' : `${k.inning}th`} inning
