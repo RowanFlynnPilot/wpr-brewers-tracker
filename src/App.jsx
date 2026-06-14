@@ -105,7 +105,7 @@ export default function App() {
         <Section kicker="On the mound" title="Pitch arsenal"><Arsenal /></Section>
         <Section kicker="How it unfolded" title="Game flow"><GameFlow /></Section>
         <Section kicker="Hot or not" title="Hitter form"><HotHitter roster={roster} /></Section>
-        <Section kicker="Where they hit it" title="Spray chart"><Spray /></Section>
+        <Section kicker="Putting the ball in play" title="Spray chart"><Spray /></Section>
 
         <footer style={{ borderTop: `1px solid ${theme.rule}`, padding: '22px 0 44px', fontFamily: theme.sans, fontSize: 11, color: theme.muted, lineHeight: 1.6 }}>
           Data via the MLB Stats API · refreshes live. Not affiliated with or endorsed by Major League Baseball or the Milwaukee Brewers.<br />

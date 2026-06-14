@@ -270,14 +270,24 @@ export async function fetchSeasonHomeRuns() {
 // across the full schedule — heavier than the HR fetch (can't pre-filter), so it's loaded once on
 // demand and cached by the component. Pooled + failure-tolerant, same pattern as the other scans.
 export async function fetchSeasonBattedBalls() {
-  const games = await fetchSeasonFinals()
+  const games = await fetchSeasonFinals() // newest-first
+  // Tag each game with its series (consecutive games vs the same opponent at the same venue),
+  // so the spray chart can filter by month or by series.
+  const meta = {}
+  let series = -1, prevKey = null
+  ;[...games].reverse().forEach((g) => {
+    const key = `${g.home ? 'vs' : '@'}${g.oppName}`
+    if (key !== prevKey) { series++; prevKey = key }
+    meta[g.gamePk] = { date: g.date, opp: g.oppName, home: g.home, seriesId: series }
+  })
   const fetched = await pooled(games, 8, async (g) => {
     const data = await getJSON(`/game/${g.gamePk}/playByPlay`)
-    return { home: g.home, plays: data.allPlays || [] }
+    return { gamePk: g.gamePk, home: g.home, plays: data.allPlays || [] }
   })
   const balls = []
   fetched.forEach((r) => {
     if (!r) return
+    const m = meta[r.gamePk] || {}
     const half = r.home ? 'bottom' : 'top'
     r.plays.filter((p) => p.about?.halfInning === half).forEach((p) => {
       const ev = (p.playEvents || []).filter((e) => e.isPitch).pop()
@@ -291,6 +301,10 @@ export async function fetchSeasonBattedBalls() {
         event: p.result?.eventType || '',
         dist: ev.hitData.totalDistance ?? null,
         ev: ev.hitData.launchSpeed ?? null,
+        date: m.date,
+        opp: m.opp,
+        home: m.home,
+        seriesId: m.seriesId,
       })
     })
   })

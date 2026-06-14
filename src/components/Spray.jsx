@@ -53,6 +53,7 @@ export default function Spray() {
   const [balls, setBalls] = useState(null)
   const [error, setError] = useState(false)
   const [pid, setPid] = useState(null)
+  const [period, setPeriod] = useState('season')
 
   useEffect(() => {
     if (armed || !ref.current) return
@@ -76,7 +77,7 @@ export default function Spray() {
   if (!balls) return <div ref={ref}><div style={{ fontFamily: theme.sans, fontSize: 13, color: theme.muted, marginBottom: 8 }}>Loading season batted balls…</div><Loading lines={3} /></div>
   if (!balls.length) return <div style={{ fontFamily: theme.sans, fontSize: 14, color: theme.muted }}>No batted-ball data yet this season.</div>
 
-  // Group by hitter; keep those with a meaningful sample, most batted balls first.
+  // Group by hitter (season sample) for a stable picker; counts/chart reflect the chosen period.
   const byId = new Map()
   balls.forEach((b) => {
     if (!byId.has(b.id)) byId.set(b.id, { id: b.id, name: b.name, balls: [] })
@@ -86,8 +87,29 @@ export default function Spray() {
   const selectedId = pid ?? batters[0]?.id
   const player = batters.find((p) => p.id === selectedId) || batters[0]
 
+  // Period options derived from all batted balls: months (chronological) + series (newest first).
+  const md = (d) => new Date(d + 'T12:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  const months = [...new Set(balls.map((b) => b.date?.slice(0, 7)).filter(Boolean))].sort()
+    .map((key) => ({ key, label: new Date(key + '-01T12:00').toLocaleDateString('en-US', { month: 'long' }) }))
+  const seriesMap = new Map()
+  balls.forEach((b) => {
+    if (b.seriesId == null) return
+    if (!seriesMap.has(b.seriesId)) seriesMap.set(b.seriesId, { id: b.seriesId, opp: b.opp, home: b.home, min: b.date, max: b.date })
+    const s = seriesMap.get(b.seriesId)
+    if (b.date < s.min) s.min = b.date
+    if (b.date > s.max) s.max = b.date
+  })
+  const seriesOpts = [...seriesMap.values()].sort((a, b) => b.max.localeCompare(a.max))
+    .map((s) => ({ id: s.id, label: `${s.home ? 'vs' : '@'} ${s.opp} · ${s.min === s.max ? md(s.min) : `${md(s.min)}–${md(s.max)}`}` }))
+
+  const inPeriod = (b) =>
+    period === 'season' ? true : period.startsWith('m:') ? b.date?.slice(0, 7) === period.slice(2) : String(b.seriesId) === period.slice(2)
+  const periodLabel =
+    period === 'season' ? 'Season' : period.startsWith('m:') ? months.find((m) => m.key === period.slice(2))?.label : seriesOpts.find((s) => `s:${s.id}` === period)?.label
+
+  const shown = (player?.balls || []).filter(inPeriod)
   const counts = ORDER.reduce((m, k) => ({ ...m, [k]: 0 }), {})
-  player.balls.forEach((b) => { counts[cat(b.event)]++ })
+  shown.forEach((b) => { counts[cat(b.event)]++ })
   const hits = counts.HR + counts['3B'] + counts['2B'] + counts['1B']
 
   const selectStyle = {
@@ -97,26 +119,38 @@ export default function Spray() {
 
   return (
     <div ref={ref}>
-      <div style={{ marginBottom: 18 }}>
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 18 }}>
         <select aria-label="Hitter" value={selectedId || ''} onChange={(e) => setPid(Number(e.target.value))} style={selectStyle}>
-          {batters.map((p) => <option key={p.id} value={p.id}>{p.name} — {p.balls.length} balls in play</option>)}
+          {batters.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+        </select>
+        <select aria-label="Span" value={period} onChange={(e) => setPeriod(e.target.value)} style={selectStyle}>
+          <option value="season">Full season</option>
+          <optgroup label="Month">
+            {months.map((m) => <option key={m.key} value={`m:${m.key}`}>{m.label}</option>)}
+          </optgroup>
+          <optgroup label="Series">
+            {seriesOpts.map((s) => <option key={s.id} value={`s:${s.id}`}>{s.label}</option>)}
+          </optgroup>
         </select>
       </div>
 
       <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'flex-start' }}>
         <div style={{ flex: narrow ? '1 1 100%' : '0 0 360px' }}>
-          <Field balls={player.balls} />
+          <Field balls={shown} />
           <div style={{ fontFamily: theme.sans, fontSize: 11, color: theme.muted, textAlign: 'center', marginTop: 2 }}>
-            {player.name} · {player.balls.length} balls in play · <span style={{ color: theme.navy, fontWeight: 700 }}>{hits} hits</span>
+            {player.name} · {periodLabel} · {shown.length} balls in play · <span style={{ color: theme.navy, fontWeight: 700 }}>{hits} hits</span>
           </div>
+          {!shown.length && (
+            <div style={{ fontFamily: theme.sans, fontSize: 12.5, color: theme.muted, textAlign: 'center', marginTop: 6 }}>No balls in play in this span.</div>
+          )}
         </div>
 
         <div style={{ flex: '1 1 200px', minWidth: 0 }}>
-          <div style={{ fontFamily: theme.sans, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: theme.gold, fontWeight: 700, marginBottom: 10 }}>Where they hit it</div>
+          <div style={{ fontFamily: theme.sans, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: theme.gold, fontWeight: 700, marginBottom: 10 }}>Outcomes</div>
           {ORDER.map((k) => (
             <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '6px 4px', borderTop: `1px solid ${theme.rule}` }}>
               <span style={{ width: 12, height: 12, borderRadius: '50%', background: CAT[k].color, opacity: k === 'OUT' ? 0.6 : 1, flexShrink: 0 }} />
-              <span style={{ fontFamily: theme.sans, fontSize: 13, color: theme.ink, flex: 1 }}>{LABEL[k]}{k !== 'OUT' ? 's' : 's'}</span>
+              <span style={{ fontFamily: theme.sans, fontSize: 13, color: theme.ink, flex: 1 }}>{LABEL[k]}s</span>
               <span style={{ fontFamily: theme.serif, fontSize: 15, fontWeight: 700, color: theme.ink }}>{counts[k]}</span>
             </div>
           ))}
