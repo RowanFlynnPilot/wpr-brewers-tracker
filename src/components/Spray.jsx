@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { theme } from '../theme.js'
-import { fetchSeasonBattedBalls } from '../api.js'
+import { fetchSeasonBattedBalls, fetchHitterGameLog } from '../api.js'
 import { useIsNarrow } from '../useIsNarrow.js'
 import { Loading } from './Status.jsx'
 
@@ -19,6 +19,16 @@ const CAT = {
 }
 const ORDER = ['HR', '3B', '2B', '1B', 'OUT']
 const LABEL = { HR: 'Home run', '3B': 'Triple', '2B': 'Double', '1B': 'Single', OUT: 'Out' }
+
+// Hitters with a meaningful batted-ball sample, most balls in play first (stable picker list).
+function groupBatters(balls) {
+  const byId = new Map()
+  balls.forEach((b) => {
+    if (!byId.has(b.id)) byId.set(b.id, { id: b.id, name: b.name, balls: [] })
+    byId.get(b.id).balls.push(b)
+  })
+  return [...byId.values()].filter((p) => p.balls.length >= 20).sort((a, b) => b.balls.length - a.balls.length)
+}
 
 function Field({ balls }) {
   const located = balls.filter((b) => b.coordX != null && b.coordY != null)
@@ -54,6 +64,7 @@ export default function Spray() {
   const [error, setError] = useState(false)
   const [pid, setPid] = useState(null)
   const [period, setPeriod] = useState('season')
+  const [logs, setLogs] = useState({}) // hitter id -> game-log splits (for accurate games played)
 
   useEffect(() => {
     if (armed || !ref.current) return
@@ -73,17 +84,25 @@ export default function Spray() {
     fetchSeasonBattedBalls().then(setBalls).catch(() => setError(true))
   }, [armed])
 
+  // Fetch the selected hitter's game log (once each) for accurate "games with >=1 at-bat".
+  useEffect(() => {
+    if (!armed || !balls) return
+    const batters = groupBatters(balls)
+    const id = pid ?? batters[0]?.id
+    if (!id || logs[id]) return
+    let alive = true
+    fetchHitterGameLog(id)
+      .then((s) => alive && setLogs((p) => ({ ...p, [id]: s })))
+      .catch(() => alive && setLogs((p) => ({ ...p, [id]: [] })))
+    return () => { alive = false }
+  }, [armed, balls, pid, logs])
+
   if (error) return null
   if (!balls) return <div ref={ref}><div style={{ fontFamily: theme.sans, fontSize: 13, color: theme.muted, marginBottom: 8 }}>Loading season batted balls…</div><Loading lines={3} /></div>
   if (!balls.length) return <div style={{ fontFamily: theme.sans, fontSize: 14, color: theme.muted }}>No batted-ball data yet this season.</div>
 
   // Group by hitter (season sample) for a stable picker; counts/chart reflect the chosen period.
-  const byId = new Map()
-  balls.forEach((b) => {
-    if (!byId.has(b.id)) byId.set(b.id, { id: b.id, name: b.name, balls: [] })
-    byId.get(b.id).balls.push(b)
-  })
-  const batters = [...byId.values()].filter((p) => p.balls.length >= 20).sort((a, b) => b.balls.length - a.balls.length)
+  const batters = groupBatters(balls)
   const selectedId = pid ?? batters[0]?.id
   const player = batters.find((p) => p.id === selectedId) || batters[0]
 
@@ -100,7 +119,7 @@ export default function Spray() {
     if (b.date > s.max) s.max = b.date
   })
   const seriesOpts = [...seriesMap.values()].sort((a, b) => b.max.localeCompare(a.max))
-    .map((s) => ({ id: s.id, label: `${s.home ? 'vs' : '@'} ${s.opp} · ${s.min === s.max ? md(s.min) : `${md(s.min)}–${md(s.max)}`}` }))
+    .map((s) => ({ id: s.id, min: s.min, max: s.max, label: `${s.home ? 'vs' : '@'} ${s.opp} · ${s.min === s.max ? md(s.min) : `${md(s.min)}–${md(s.max)}`}` }))
 
   const inPeriod = (b) =>
     period === 'season' ? true : period.startsWith('m:') ? b.date?.slice(0, 7) === period.slice(2) : String(b.seriesId) === period.slice(2)
@@ -111,7 +130,19 @@ export default function Spray() {
   const counts = ORDER.reduce((m, k) => ({ ...m, [k]: 0 }), {})
   shown.forEach((b) => { counts[cat(b.event)]++ })
   const hits = counts.HR + counts['3B'] + counts['2B'] + counts['1B']
-  const gp = new Set(shown.map((b) => b.gamePk)).size // games with a ball in play (doubleheader-safe)
+
+  // Games played (>=1 at-bat) in the span, from the hitter's game log; falls back to distinct
+  // ball-in-play games until the log loads.
+  const log = logs[selectedId]
+  const seriesSel = period.startsWith('s:') ? seriesOpts.find((s) => `s:${s.id}` === period) : null
+  const logInPeriod = (s) =>
+    period === 'season' ? true
+      : period.startsWith('m:') ? s.date?.slice(0, 7) === period.slice(2)
+        : seriesSel ? s.date >= seriesSel.min && s.date <= seriesSel.max
+          : true
+  const gp = log
+    ? log.filter((s) => (+s.stat?.atBats || 0) >= 1 && logInPeriod(s)).length
+    : new Set(shown.map((b) => b.gamePk)).size
 
   const selectStyle = {
     fontFamily: theme.sans, fontSize: 13, color: theme.navy, background: '#fff',
