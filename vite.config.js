@@ -11,8 +11,10 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'index.html'),
-        // Compact scoreboard for sidebars/articles — its own page so embeds stay lightweight.
+        // Compact widgets for sidebars/articles — each its own page so embeds stay lightweight.
         mini: resolve(__dirname, 'mini.html'),
+        miniStandings: resolve(__dirname, 'mini-standings.html'),
+        miniStrikeouts: resolve(__dirname, 'mini-strikeouts.html'),
       },
     },
   },

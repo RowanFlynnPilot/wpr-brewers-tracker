@@ -40,10 +40,12 @@ MLB Stats API (statsapi.mlb.com) → fetch() in browser → React/Vite → GitHu
   (page views = impressions, `Sponsor Click` events = click-throughs per slot). Disabled
   unless `ANALYTICS.domain` is set in `config.js`; off by default = no external script, no
   dependency. This is analytics only — it is NOT the forbidden data scraper/cache.
-- `mini.html` + `src/mini.jsx` — a second Vite entry: the compact featured-game scoreboard
-  for sidebar/in-article embeds (`MiniGame.jsx`). The card is one link to the full tracker;
-  the embed's `?to=` param overrides the destination (http/https only). Keep it tiny — no
-  service worker, no recharts, just the featured-game feed.
+- `mini*.html` + `src/mini*.jsx` — extra Vite entries: compact sidebar/in-article embeds, each
+  its own page so they stay lightweight. `MiniGame.jsx` (featured-game scoreboard),
+  `MiniStandings.jsx` (NL Central table), `MiniStrikeouts.jsx` (latest game's top-K performance
+  on a strike zone). Each card is one link to the full tracker; the embed's `?to=` param overrides
+  the destination (http/https only — shared `src/embed.js` `destination()`). Clicks fire a
+  `Mini Click` event tagged with `widget`. Keep them tiny — no service worker, no recharts.
 - `src/components/` — one file per concern (separation of concerns):
   - `Masthead`, `BrewersBanner`, `Section` — chrome.
   - `Pulse`, `Standings` — consume shared standings fetched once in `App`.

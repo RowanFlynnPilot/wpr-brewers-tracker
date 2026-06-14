@@ -63,6 +63,30 @@ without it, the card links to the standalone tracker.
 Mini impressions show in Plausible as the `/wpr-brewers-tracker/mini.html` page;
 clicks fire a `Mini Click` event (add it as a goal to report on it).
 
+### Mini standings (sidebar / in-article)
+
+A compact NL Central standings card at `/mini-standings.html`. Same `to` + click behavior.
+
+```html
+<iframe src="https://rowanflynnpilot.github.io/wpr-brewers-tracker/mini-standings.html?to=https://wausaupilotandreview.com/milwaukee-brewers/"
+        style="width:100%;border:0;height:260px" loading="lazy"
+        title="NL Central standings — tap for the full tracker"></iframe>
+```
+
+### Mini strikeout tracker (sidebar / in-article)
+
+A compact card at `/mini-strikeouts.html` that auto-features the Brewers' top strikeout
+performance from the most recent game (strike-zone plot, pitch types, swinging/looking).
+
+```html
+<iframe src="https://rowanflynnpilot.github.io/wpr-brewers-tracker/mini-strikeouts.html?to=https://wausaupilotandreview.com/milwaukee-brewers/"
+        style="width:100%;border:0;height:390px" loading="lazy"
+        title="Brewers strikeout tracker — tap for the full tracker"></iframe>
+```
+
+Each mini is its own Plausible page (`/mini-standings.html`, `/mini-strikeouts.html`);
+clicks fire a `Mini Click` event tagged with the `widget` (scoreboard/standings/strikeouts).
+
 ## Configure
 
 Everything tweakable lives in `src/config.js`: season, team, division, sponsor strings,

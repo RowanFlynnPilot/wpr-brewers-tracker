@@ -1,21 +1,15 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { theme } from '../theme.js'
-import { TEAM_ID, TEAM_ACCENT, SPONSORS, SITE_URL, headshot } from '../config.js'
+import { TEAM_ID, TEAM_ACCENT, SPONSORS, headshot } from '../config.js'
 import { fetchFeaturedGame, fetchPitcherSeason, fetchMiniLive, fetchBoxscore } from '../api.js'
 import { fetchFirstPitchForecast } from '../weather.js'
 import { playerOfTheGame, liveMatchupLines } from '../games.js'
 import { track } from '../analytics.js'
+import { destination } from '../embed.js'
 import TeamLogo from './TeamLogo.jsx'
 
 const REFRESH_MS = 45000
 const IDLE_REFRESH_MS = 120000
-
-// Where a tap lands: the embed can pass ?to=<full-tracker page on the news site>; until that
-// page exists, fall back to the standalone tracker. http(s) only — never a script URL.
-function destination() {
-  const to = new URLSearchParams(window.location.search).get('to')
-  return to && /^https?:\/\//i.test(to) ? to : SITE_URL
-}
 
 // "Misiorowski (7-2, 1.50)" — the broadcast notation for a probable's record + ERA.
 const pitcherLine = (pitcher, stat) => {
