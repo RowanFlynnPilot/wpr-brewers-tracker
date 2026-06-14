@@ -200,10 +200,13 @@ export async function fetchLiveExtras(gamePk) {
 // Completed regular-season Brewers games, newest first — the strikeout tracker's game picker.
 export async function fetchSeasonFinals() {
   const data = await getJSON(`/schedule?sportId=1&teamId=${TEAM_ID}&startDate=${SEASON}-03-01&endDate=${today()}&hydrate=team`)
-  const seen = new Set() // a suspended/resumed game can appear under two dates — keep it once
+  const seen = new Set() // a rescheduled game appears twice — once as a scoreless placeholder on
+  // its original date, once with the real result. Drop scoreless records first, then dedupe by
+  // gamePk so the played game (with scores) is the one kept.
   const games = data.dates
     .flatMap((d) => d.games)
     .filter((g) => g.gameType === 'R' && g.status.abstractGameState === 'Final')
+    .filter((g) => g.teams.home.score != null && g.teams.away.score != null)
     .filter((g) => (seen.has(g.gamePk) ? false : seen.add(g.gamePk)))
     .map((g) => {
       const home = g.teams.home.team.id === TEAM_ID
