@@ -100,7 +100,7 @@ export default function App() {
         <footer style={{ borderTop: `1px solid ${theme.rule}`, padding: '22px 0 44px', fontFamily: theme.sans, fontSize: 11, color: theme.muted, lineHeight: 1.6 }}>
           Data via the MLB Stats API · refreshes live. Not affiliated with or endorsed by Major League Baseball or the Milwaukee Brewers.<br />
           {SPONSOR_DISCLAIMER && <>{SPONSOR_DISCLAIMER}<br /></>}
-          Wausau Pilot &amp; Review · 602 Ruder St., Wausau WI 54403 · 715-301-5539
+          Wausau Pilot &amp; Review · 715-301-5539
         </footer>
       </div>
     </div>
