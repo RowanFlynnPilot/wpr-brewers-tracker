@@ -61,6 +61,54 @@ export function recentResults(schedules, teamId, n = 10) {
   return finals(team.dates, teamId).slice(-n).map((g) => g.won)
 }
 
+// Win-probability flow for one game, from the /winProbability feed. Converts each play to the
+// Brewers' win % (and win-probability-added), flags scoring plays, and finds the single biggest
+// swing in the Brewers' favor. `brewersHome` decides which side's probability to read.
+export function gameFlow(entries, brewersHome) {
+  const points = (entries || [])
+    .map((e) => {
+      const wp = brewersHome ? e.homeTeamWinProbability : e.awayTeamWinProbability
+      const wpaHome = e.homeTeamWinProbabilityAdded || 0
+      return {
+        wp,
+        wpa: brewersHome ? wpaHome : -wpaHome,
+        scoring: !!e.about?.isScoringPlay,
+        inning: e.about?.inning,
+        half: e.about?.halfInning,
+        desc: e.result?.description || '',
+      }
+    })
+    .filter((p) => typeof p.wp === 'number')
+  let biggest = -1
+  points.forEach((p, i) => { if (biggest < 0 || p.wpa > points[biggest].wpa) biggest = i })
+  return { points, biggest }
+}
+
+// Rolling OPS form for a hitter from their game log. Computes a trailing-`window` OPS at every
+// game (the streak line), plus season + last-window OPS and a hot/cold trend.
+function opsOf(games) {
+  let ab = 0, h = 0, d = 0, t = 0, hr = 0, bb = 0, hbp = 0, sf = 0
+  games.forEach((s) => {
+    const x = s.stat || s
+    ab += +x.atBats || 0; h += +x.hits || 0; d += +x.doubles || 0; t += +x.triples || 0
+    hr += +x.homeRuns || 0; bb += +x.baseOnBalls || 0; hbp += +x.hitByPitch || 0; sf += +x.sacFlies || 0
+  })
+  const onBase = ab + bb + hbp + sf
+  const obp = onBase ? (h + bb + hbp) / onBase : 0
+  const slg = ab ? (h + d + 2 * t + 3 * hr) / ab : 0
+  return obp + slg
+}
+export function hitterForm(splits, window = 10) {
+  const games = splits || []
+  if (!games.length) return null
+  const series = games.map((_, i) => opsOf(games.slice(Math.max(0, i - window + 1), i + 1)))
+  const season = opsOf(games)
+  const last = opsOf(games.slice(-window))
+  const diff = last - season
+  const trend = diff >= 0.04 ? 'Heating up' : diff <= -0.04 ? 'Cooling off' : 'Steady'
+  return { series, season, last, trend, diff, games: games.length, window }
+}
+
 // Group season home runs by hitter, with count + average distance, sorted by count (most first).
 // Feeds the home run tracker's player picker and the team leaderboard.
 export function homeRunsByPlayer(hrs) {

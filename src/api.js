@@ -266,6 +266,18 @@ export async function fetchSeasonHomeRuns() {
   return hrs
 }
 
+// Per-play win probability for one game (game-flow chart derives the line + biggest swing).
+export async function fetchWinProbability(gamePk) {
+  const data = await getJSON(`/game/${gamePk}/winProbability`)
+  return Array.isArray(data) ? data : []
+}
+
+// One hitter's game-by-game log for the season (hot-or-not form chart).
+export async function fetchHitterGameLog(personId) {
+  const data = await getJSON(`/people/${personId}/stats?stats=gameLog&season=${SEASON}&group=hitting`)
+  return data.stats?.[0]?.splits || []
+}
+
 // Active roster with season stats hydrated in a single call.
 export async function fetchRosterStats() {
   const data = await getJSON(`/teams/${TEAM_ID}/roster?rosterType=active&hydrate=person(stats(type=season,season=${SEASON}))`)

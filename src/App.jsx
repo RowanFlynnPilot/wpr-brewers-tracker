@@ -20,6 +20,8 @@ import Coverage from './components/Coverage.jsx'
 import Strikeouts from './components/Strikeouts.jsx'
 import HomeRuns from './components/HomeRuns.jsx'
 import Arsenal from './components/Arsenal.jsx'
+import GameFlow from './components/GameFlow.jsx'
+import HotHitter from './components/HotHitter.jsx'
 import { Loading } from './components/Status.jsx'
 
 // Recharts is the heaviest dependency — load the race chart in its own chunk.
@@ -100,6 +102,8 @@ export default function App() {
         <Section kicker="Pitch by pitch" title="Strikeout tracker"><Strikeouts /></Section>
         <Section kicker="Off the bat" title="Home run tracker"><HomeRuns /></Section>
         <Section kicker="On the mound" title="Pitch arsenal"><Arsenal /></Section>
+        <Section kicker="How it unfolded" title="Game flow"><GameFlow /></Section>
+        <Section kicker="Hot or not" title="Hitter form"><HotHitter roster={roster} /></Section>
 
         <footer style={{ borderTop: `1px solid ${theme.rule}`, padding: '22px 0 44px', fontFamily: theme.sans, fontSize: 11, color: theme.muted, lineHeight: 1.6 }}>
           Data via the MLB Stats API · refreshes live. Not affiliated with or endorsed by Major League Baseball or the Milwaukee Brewers.<br />
