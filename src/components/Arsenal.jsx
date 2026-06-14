@@ -30,8 +30,10 @@ function Donut({ mix, total }) {
 }
 
 // Velocity by pitch number — shows spread by type and any late dip. Dots colored by pitch type.
-// Wide aspect so it can span most of the section width.
+// Wide aspect so it can span most of the section width. Hovering/tapping a dot shows a tooltip
+// with velocity, pitch type, batter, and the pitch's result.
 function VeloChart({ pitches }) {
+  const [hover, setHover] = useState(null) // { p, cx, cy }
   const withV = pitches.filter((p) => p.velo != null)
   if (withV.length < 2) return null
   const W = 640, H = 150, padL = 34, padB = 20, padT = 10, padR = 12
@@ -40,18 +42,46 @@ function VeloChart({ pitches }) {
   const n = pitches.length
   const x = (i) => padL + (i / (n - 1)) * (W - padL - padR)
   const y = (v) => padT + ((vMax - v) / (vMax - vMin)) * (H - padT - padB)
+  // Tooltip position as % of the viewBox so it tracks correctly as the SVG scales to width.
+  const below = hover && (hover.cy / H) * 100 < 35
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: 'block' }} role="img" aria-label="Velocity by pitch number">
-      {[vMin, Math.round((vMin + vMax) / 2), vMax].map((v) => (
-        <g key={v}>
-          <line x1={padL} y1={y(v)} x2={W - padR} y2={y(v)} stroke={theme.rule} strokeWidth="0.75" />
-          <text x={padL - 5} y={y(v) + 3} textAnchor="end" fontFamily={theme.sans} fontSize="9" fill={theme.muted}>{v}</text>
-        </g>
-      ))}
-      {withV.map((p, i) => <circle key={i} cx={x(pitches.indexOf(p))} cy={y(p.velo)} r="3" fill={pitchColor(p.code)} />)}
-      <text x={padL} y={H - 4} fontFamily={theme.sans} fontSize="9" fill={theme.muted}>First Pitch</text>
-      <text x={W - padR} y={H - 4} textAnchor="end" fontFamily={theme.sans} fontSize="9" fill={theme.muted}>Last</text>
-    </svg>
+    <div style={{ position: 'relative' }} onMouseLeave={() => setHover(null)}>
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: 'block' }} role="img" aria-label="Velocity by pitch number">
+        {[vMin, Math.round((vMin + vMax) / 2), vMax].map((v) => (
+          <g key={v}>
+            <line x1={padL} y1={y(v)} x2={W - padR} y2={y(v)} stroke={theme.rule} strokeWidth="0.75" />
+            <text x={padL - 5} y={y(v) + 3} textAnchor="end" fontFamily={theme.sans} fontSize="9" fill={theme.muted}>{v}</text>
+          </g>
+        ))}
+        {withV.map((p, i) => {
+          const cx = x(pitches.indexOf(p)), cy = y(p.velo)
+          const isHover = hover?.p === p
+          return (
+            <circle key={i} cx={cx} cy={cy} r={isHover ? 5 : 3} fill={pitchColor(p.code)}
+              stroke={isHover ? theme.ink : 'none'} strokeWidth={isHover ? 1.5 : 0}
+              style={{ cursor: 'pointer' }}
+              onMouseEnter={() => setHover({ p, cx, cy })} onClick={() => setHover({ p, cx, cy })} />
+          )
+        })}
+        <text x={padL} y={H - 4} fontFamily={theme.sans} fontSize="9" fill={theme.muted}>First Pitch</text>
+        <text x={W - padR} y={H - 4} textAnchor="end" fontFamily={theme.sans} fontSize="9" fill={theme.muted}>Last</text>
+      </svg>
+      {hover && (
+        <div style={{
+          position: 'absolute', left: `${Math.min(90, Math.max(10, (hover.cx / W) * 100))}%`, top: `${(hover.cy / H) * 100}%`,
+          transform: `translate(-50%, ${below ? '26%' : '-118%'})`, pointerEvents: 'none', zIndex: 2,
+          background: '#fff', border: `1px solid ${theme.rule}`, borderRadius: 6, boxShadow: '0 4px 14px rgba(0,0,0,0.12)',
+          padding: '6px 9px', whiteSpace: 'nowrap',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: theme.sans, fontSize: 12, fontWeight: 700, color: theme.ink }}>
+            <span style={{ width: 9, height: 9, borderRadius: '50%', background: pitchColor(hover.p.code) }} />
+            {hover.p.velo} mph · {hover.p.type}
+          </div>
+          {hover.p.batter && <div style={{ fontFamily: theme.sans, fontSize: 11, color: theme.muted, marginTop: 2 }}>vs {hover.p.batter}</div>}
+          {hover.p.result && <div style={{ fontFamily: theme.sans, fontSize: 11, color: theme.ink }}>{hover.p.result}</div>}
+        </div>
+      )}
+    </div>
   )
 }
 

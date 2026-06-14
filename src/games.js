@@ -66,10 +66,15 @@ export function gamePitchers(allPlays, pitchingHalf) {
     const log = byId.get(id)
     ;(p.playEvents || []).filter((e) => e.isPitch).forEach((e) => {
       if (e.pitchData?.startSpeed == null && !e.details?.type?.code) return
+      // Per-pitch result: the batted-ball outcome for balls in play, else the pitch call.
+      const call = e.details?.call?.description || ''
+      const result = e.details?.isInPlay ? (p.result?.event || 'In play') : call === 'Foul' ? 'Foul ball' : call
       log.pitches.push({
         code: e.details?.type?.code || '',
         type: e.details?.type?.description || 'Pitch',
         velo: e.pitchData?.startSpeed ?? null,
+        batter: p.matchup.batter?.fullName || '',
+        result,
         inning: p.about.inning,
         num: log.pitches.length + 1,
       })
