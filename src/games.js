@@ -76,6 +76,8 @@ export function gameFlow(entries, brewersHome) {
         inning: e.about?.inning,
         half: e.about?.halfInning,
         desc: e.result?.description || '',
+        bs: brewersHome ? e.result?.homeScore : e.result?.awayScore, // Brewers score after the play
+        os: brewersHome ? e.result?.awayScore : e.result?.homeScore, // opponent score after the play
       }
     })
     .filter((p) => typeof p.wp === 'number')

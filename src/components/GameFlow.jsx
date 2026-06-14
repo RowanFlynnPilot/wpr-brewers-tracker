@@ -6,7 +6,7 @@ import { Loading } from './Status.jsx'
 
 const W = 660, H = 220, padL = 30, padB = 24, padT = 10, padR = 10
 
-function FlowChart({ flow, won }) {
+function FlowChart({ flow, oppName }) {
   const [hover, setHover] = useState(null) // { p, cx, cy }
   const { points, biggest } = flow
   const n = points.length
@@ -54,6 +54,9 @@ function FlowChart({ flow, won }) {
           <div style={{ fontFamily: theme.sans, fontSize: 12, fontWeight: 700, color: theme.navy }}>
             Brewers {Math.round(hover.p.wp)}% <span style={{ color: theme.muted, fontWeight: 400 }}>· {hover.p.half === 'top' ? 'Top' : 'Bot'} {hover.p.inning}</span>
           </div>
+          {hover.p.bs != null && (
+            <div style={{ fontFamily: theme.sans, fontSize: 11, color: theme.ink, fontWeight: 700, marginTop: 1 }}>Brewers {hover.p.bs}, {oppName} {hover.p.os}</div>
+          )}
           <div style={{ fontFamily: theme.sans, fontSize: 11, color: theme.muted, marginTop: 2, lineHeight: 1.35 }}>{hover.p.desc}</div>
         </div>
       )}
@@ -127,10 +130,11 @@ export default function GameFlow() {
       {flow && flow.points.length > 0 && (
         <>
           <div style={{ fontFamily: theme.sans, fontSize: 11, color: theme.muted, marginBottom: 4 }}>Brewers win probability (%) — inning by inning</div>
-          <FlowChart flow={flow} won={data.won} />
+          <FlowChart flow={flow} oppName={game?.oppName || 'Opp'} />
           {big && (
             <div style={{ fontFamily: theme.sans, fontSize: 12.5, color: theme.ink, marginTop: 8, lineHeight: 1.5, maxWidth: 620 }}>
               <span style={{ fontWeight: 700, color: theme.gold }}>Biggest swing</span> <span style={{ color: theme.muted }}>({big.wpa > 0 ? '+' : ''}{Math.round(big.wpa)}% for the Brewers)</span>: {big.desc}
+              {big.bs != null && <span style={{ fontWeight: 700 }}> Brewers {big.bs}, {game?.oppName || 'Opp'} {big.os}.</span>}
             </div>
           )}
         </>
