@@ -13,6 +13,16 @@ export const TEAM_ABBR = { 158: 'MIL', 138: 'STL', 134: 'PIT', 112: 'CHC', 113: 
 // Calmer, distinct hues for the rivals so the navy Brewers line stays the focus.
 export const TEAM_COLORS = { 158: '#12284b', 138: '#a23b46', 134: '#c08a2e', 112: '#4e72a8', 113: '#6f9e6a' }
 
+// MLB team id → short club name (from /teams?sportId=1). Used to label opponents where the
+// feed only carries a team id (e.g. the game-log opponent in the home run tracker).
+export const TEAM_NAMES = {
+  108: 'Angels', 109: 'D-backs', 110: 'Orioles', 111: 'Red Sox', 112: 'Cubs', 113: 'Reds',
+  114: 'Guardians', 115: 'Rockies', 116: 'Tigers', 117: 'Astros', 118: 'Royals', 119: 'Dodgers',
+  120: 'Nationals', 121: 'Mets', 133: 'Athletics', 134: 'Pirates', 135: 'Padres', 136: 'Mariners',
+  137: 'Giants', 138: 'Cardinals', 139: 'Rays', 140: 'Rangers', 141: 'Blue Jays', 142: 'Twins',
+  143: 'Phillies', 144: 'Braves', 145: 'White Sox', 146: 'Marlins', 147: 'Yankees', 158: 'Brewers',
+}
+
 // Accent hue per MLB club for the mini scoreboard's split top edge — each team's most
 // recognizable color, tuned to read against Brewers navy. Decorative, not official marks.
 export const TEAM_ACCENT = {

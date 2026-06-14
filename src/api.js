@@ -1,6 +1,6 @@
 // MLB Stats API client. One job: fetch and return JSON. No fallbacks, no caching layer.
 // The API is public and CORS-open (access-control-allow-origin: *), so this runs in the browser.
-import { SEASON, LEAGUE_ID, DIVISION_ID, TEAM_ID, DIVISION } from './config.js'
+import { SEASON, LEAGUE_ID, DIVISION_ID, TEAM_ID, DIVISION, TEAM_NAMES } from './config.js'
 
 const BASE = 'https://statsapi.mlb.com/api/v1'
 
@@ -238,7 +238,7 @@ export async function fetchSeasonHomeRuns() {
   const hrGames = (log.stats?.[0]?.splits || []).filter((s) => (s.stat?.homeRuns || 0) > 0 && s.game?.gamePk)
   const games = await pooled(hrGames, 6, async (s) => {
     const data = await getJSON(`/game/${s.game.gamePk}/playByPlay`)
-    return { isHome: s.isHome, date: s.date, opp: (s.opponent?.name || '').replace('Milwaukee ', ''), plays: data.allPlays || [] }
+    return { isHome: s.isHome, date: s.date, opp: TEAM_NAMES[s.opponent?.id] || '', plays: data.allPlays || [] }
   })
   const hrs = []
   games.forEach((g) => {

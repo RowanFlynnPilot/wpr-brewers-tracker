@@ -48,7 +48,7 @@ function Field({ hrs }) {
         }}>
           <div style={{ fontFamily: theme.sans, fontSize: 12, fontWeight: 700, color: theme.navy }}>{hover.h.dist != null ? `${hover.h.dist} ft` : 'Home run'}</div>
           <div style={{ fontFamily: theme.sans, fontSize: 11, color: theme.muted, marginTop: 2 }}>
-            {hover.h.ev != null ? `${hover.h.ev} mph · ` : ''}{hover.h.la != null ? `${hover.h.la}° · ` : ''}{shortDate(hover.h.date)}
+            {hover.h.ev != null ? `${hover.h.ev} mph · ` : ''}{hover.h.la != null ? `${hover.h.la}° · ` : ''}{shortDate(hover.h.date)}{hover.h.opp ? ` ${hover.h.isHome ? 'vs' : '@'} ${hover.h.opp}` : ''}
           </div>
         </div>
       )}
