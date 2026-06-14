@@ -163,7 +163,22 @@ export default function GameHero() {
   const won = final && me.score > opp.score
 
   const kicker = live ? 'Live' : final ? 'Final' : isToday ? "Today's game" : 'Next game'
-  const inning = live ? `${ls.inningHalf || ''} ${ls.currentInningOrdinal || ''}`.trim() : null
+
+  // Live half-inning + outs, corrected for the between-innings moment when the linescore still
+  // reports the just-ended half with a stale 3 outs. inningState 'Middle' = top just ended (bottom
+  // of the same inning is up next); 'End' = bottom just ended (top of the next inning is up next).
+  const ord = (n) => { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]) }
+  const between = live && (ls.inningState === 'Middle' || ls.inningState === 'End' || (ls.outs ?? 0) >= 3)
+  let topNow = ls.isTopInning
+  let inningNum = ls.currentInning || 0
+  if (between) {
+    const topJustEnded = ls.inningState === 'Middle' || ((ls.outs ?? 0) >= 3 && ls.isTopInning)
+    topNow = !topJustEnded // the half coming up
+    if (!topJustEnded) inningNum += 1 // a bottom-half ending rolls to the next inning's top
+  }
+  const outsNow = between ? 0 : (ls.outs ?? 0)
+  const halfLabel = live && inningNum ? `${topNow ? 'Top' : 'Bottom'} ${ord(inningNum)}` : null
+  const inning = halfLabel
   const series = game.gamesInSeries ? `Game ${game.seriesGameNumber} of ${game.gamesInSeries}` : null
   const when = !live && !final
     ? new Date(game.gameDate).toLocaleString('en-US', { weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
@@ -245,16 +260,24 @@ export default function GameHero() {
         <TeamBlock team={opp} name={oppName} />
       </div>
 
+      {/* Half-inning, right under the score (▲ top / ▼ bottom) */}
+      {live && halfLabel && (
+        <div style={{ fontFamily: theme.sans, fontSize: 13, fontWeight: 700, letterSpacing: '0.04em', color: theme.navy, margin: '-4px 0 16px' }}>
+          <span style={{ color: theme.gold, marginRight: 5 }}>{topNow ? '▲' : '▼'}</span>
+          {halfLabel}{between ? ' · coming up' : ''}
+        </div>
+      )}
+
       {/* Live situation */}
       {live && (
         <div aria-live="polite" style={{ margin: '0 0 18px' }}>
-          <Bases first={!!ls.offense?.first} second={!!ls.offense?.second} third={!!ls.offense?.third} />
+          <Bases first={!between && !!ls.offense?.first} second={!between && !!ls.offense?.second} third={!between && !!ls.offense?.third} />
           <div style={{ fontFamily: theme.sans, fontSize: 13, color: theme.ink, marginTop: 8 }}>
-            {ls.balls ?? 0}-{ls.strikes ?? 0}, {ls.outs ?? 0} out{ls.outs === 1 ? '' : 's'}
+            {between ? `${outsNow} out${outsNow === 1 ? '' : 's'}` : `${ls.balls ?? 0}-${ls.strikes ?? 0}, ${outsNow} out${outsNow === 1 ? '' : 's'}`}
           </div>
           {(ls.offense?.batter || ls.defense?.pitcher) && (
             <div style={{ fontFamily: theme.sans, fontSize: 12, color: theme.muted, marginTop: 4 }}>
-              {[ls.offense?.batter && `At bat: ${ls.offense.batter.fullName}`, ls.defense?.pitcher && `P: ${ls.defense.pitcher.fullName}`].filter(Boolean).join(' · ')}
+              {[ls.offense?.batter && `${between ? 'Due up' : 'At bat'}: ${ls.offense.batter.fullName}`, ls.defense?.pitcher && `P: ${ls.defense.pitcher.fullName}`].filter(Boolean).join(' · ')}
             </div>
           )}
         </div>
