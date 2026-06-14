@@ -7,25 +7,44 @@ import { useIsNarrow } from '../useIsNarrow.js'
 import { Loading } from './Status.jsx'
 
 // Donut of pitch usage. R/ring math via stroke-dasharray; segments start at 12 o'clock.
+// Hovering/tapping a segment dims the rest and shows a tooltip (pitch, usage, avg, top).
 function Donut({ mix, total }) {
+  const [seg, setSeg] = useState(null)
   const R = 58, C = 2 * Math.PI * R
   let offset = 0
   return (
-    <svg viewBox="0 0 150 150" width="150" height="150" role="img" aria-label="Pitch usage by type">
-      <g transform="rotate(-90 75 75)">
-        {mix.map((m) => {
-          const len = (m.n / total) * C
-          const seg = (
-            <circle key={m.code} cx="75" cy="75" r={R} fill="none" stroke={pitchColor(m.code)} strokeWidth="22"
-              strokeDasharray={`${len} ${C - len}`} strokeDashoffset={-offset} />
-          )
-          offset += len
-          return seg
-        })}
-      </g>
-      <text x="75" y="71" textAnchor="middle" fontFamily={theme.serif} fontSize="30" fontWeight="700" fill={theme.navy}>{total}</text>
-      <text x="75" y="89" textAnchor="middle" fontFamily={theme.sans} fontSize="12" fill={theme.muted}>Pitches</text>
-    </svg>
+    <div style={{ position: 'relative', width: 150 }} onMouseLeave={() => setSeg(null)}>
+      <svg viewBox="0 0 150 150" width="150" height="150" role="img" aria-label="Pitch usage by type">
+        <g transform="rotate(-90 75 75)">
+          {mix.map((m) => {
+            const len = (m.n / total) * C
+            const el = (
+              <circle key={m.code} cx="75" cy="75" r={R} fill="none" stroke={pitchColor(m.code)} strokeWidth="22"
+                strokeDasharray={`${len} ${C - len}`} strokeDashoffset={-offset}
+                opacity={seg && seg.code !== m.code ? 0.4 : 1} style={{ cursor: 'pointer' }}
+                onMouseEnter={() => setSeg(m)} onClick={() => setSeg(m)} />
+            )
+            offset += len
+            return el
+          })}
+        </g>
+        <text x="75" y="71" textAnchor="middle" fontFamily={theme.serif} fontSize="30" fontWeight="700" fill={theme.navy}>{total}</text>
+        <text x="75" y="89" textAnchor="middle" fontFamily={theme.sans} fontSize="12" fill={theme.muted}>Pitches</text>
+      </svg>
+      {seg && (
+        <div style={{
+          position: 'absolute', left: '50%', top: -4, transform: 'translate(-50%, -100%)', pointerEvents: 'none', zIndex: 2,
+          background: '#fff', border: `1px solid ${theme.rule}`, borderRadius: 6, boxShadow: '0 4px 14px rgba(0,0,0,0.12)', padding: '6px 9px', whiteSpace: 'nowrap',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: theme.sans, fontSize: 12, fontWeight: 700, color: theme.ink }}>
+            <span style={{ width: 9, height: 9, borderRadius: '50%', background: pitchColor(seg.code) }} />{seg.type}
+          </div>
+          <div style={{ fontFamily: theme.sans, fontSize: 11, color: theme.muted, marginTop: 2 }}>
+            Usage {seg.pct}% · Avg {seg.avg != null ? seg.avg.toFixed(1) : '—'} · Top {seg.max != null ? seg.max : '—'}
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -184,7 +203,7 @@ export default function Arsenal() {
                 </thead>
                 <tbody>
                   {mix.map((m) => (
-                    <tr key={m.code}>
+                    <tr key={m.code} className="hover-row">
                       <td style={{ ...td, textAlign: 'left' }}>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
                           <span style={{ width: 10, height: 10, borderRadius: '50%', background: pitchColor(m.code), flexShrink: 0 }} />{m.type}
