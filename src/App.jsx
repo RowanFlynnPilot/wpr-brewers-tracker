@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, lazy, Suspense } from 'react'
 import { theme } from './theme.js'
-import { SPONSOR_DISCLAIMER, WATCH_PARTY } from './config.js'
+import { SPONSOR_DISCLAIMER, WATCH_PARTY, WPR_NEWS } from './config.js'
 import { fetchStandingsBundle, fetchDivisionSchedules, fetchRosterStats } from './api.js'
 import { lastFinalGame } from './games.js'
 import { initAnalytics } from './analytics.js'
@@ -16,6 +16,7 @@ import ThisDay from './components/ThisDay.jsx'
 import WhereToWatch from './components/WhereToWatch.jsx'
 import MilestoneWatch, { milestoneWatch } from './components/MilestoneWatch.jsx'
 import SponsorBand from './components/SponsorBand.jsx'
+import Coverage from './components/Coverage.jsx'
 import { Loading } from './components/Status.jsx'
 
 // Recharts is the heaviest dependency — load the race chart in its own chunk.
@@ -88,6 +89,7 @@ export default function App() {
           <Suspense fallback={<Loading block />}><Race schedules={schedules} error={errors.schedules} /></Suspense>
         </Section>
         <Section kicker="Recent & upcoming" title="The schedule"><Schedule /></Section>
+        {WPR_NEWS && <Section kicker="From the newsroom" title="WPR Brewers coverage"><Coverage /></Section>}
         <SponsorBand />
         {WATCH_PARTY && <Section kicker="Where to watch" title="Catch the games this week"><WhereToWatch venue={WATCH_PARTY} /></Section>}
         <Section kicker="From the vault" title="This day in Brewers history"><ThisDay /></Section>

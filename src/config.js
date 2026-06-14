@@ -41,6 +41,16 @@ export const WPR_URL = 'https://wausaupilotandreview.com/'
 // description, and the social-card tags in index.html.
 export const SITE_URL = 'https://rowanflynnpilot.github.io/wpr-brewers-tracker/'
 
+// WPR's own Brewers coverage, pulled live from the WordPress REST API (keyless + CORS-open,
+// same rules as the MLB/weather clients). `categoryId` is the "Milwaukee Brewers" category
+// (slug milwaukee-brewers); `archive` is its public page. Set WPR_NEWS to null to hide the
+// "From the newsroom" section.
+export const WPR_NEWS = {
+  base: 'https://wausaupilotandreview.com/wp-json/wp/v2',
+  categoryId: 567083300,
+  archive: 'https://wausaupilotandreview.com/milwaukee-brewers/',
+}
+
 // Sellable sponsor surfaces. One title slot (the navy banner) plus two inline section slots.
 // A slot is either a sponsor object or null (renders as an "available" upsell card).
 // Sponsor shape: { name, logo, url, tagline? } — logo optional (falls back to the name in serif).
