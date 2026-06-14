@@ -34,25 +34,20 @@ export function recentResults(schedules, teamId, n = 10) {
   return finals(team.dates, teamId).slice(-n).map((g) => g.won)
 }
 
-// Brewers home runs in a game, with Statcast batted-ball data + landing coordinates for the
-// spray chart. `battingHalf` is the half the Brewers bat in ('bottom' home, 'top' away).
-export function gameHomeRuns(allPlays, battingHalf) {
-  const hrs = (allPlays || []).filter((p) => p.result?.eventType === 'home_run' && p.about?.halfInning === battingHalf)
-  return hrs.map((p) => {
-    const ev = (p.playEvents || []).filter((e) => e.isPitch).pop()
-    const h = ev?.hitData || {}
-    const field = (p.result.description || '').match(/to ([a-z ]*field)/i)?.[1] || ''
-    return {
-      batter: p.matchup.batter.fullName,
-      inning: p.about.inning,
-      dist: h.totalDistance ?? null,
-      ev: h.launchSpeed ?? null,
-      la: h.launchAngle ?? null,
-      coordX: h.coordinates?.coordX ?? null,
-      coordY: h.coordinates?.coordY ?? null,
-      field: field.trim(),
-    }
+// Group season home runs by hitter, with count + average distance, sorted by count (most first).
+// Feeds the home run tracker's player picker and the team leaderboard.
+export function homeRunsByPlayer(hrs) {
+  const byId = new Map()
+  ;(hrs || []).forEach((h) => {
+    if (!byId.has(h.id)) byId.set(h.id, { id: h.id, name: h.batter, hrs: [] })
+    byId.get(h.id).hrs.push(h)
   })
+  return [...byId.values()]
+    .map((p) => {
+      const dists = p.hrs.map((h) => h.dist).filter((d) => d != null)
+      return { ...p, count: p.hrs.length, avgDist: dists.length ? Math.round(dists.reduce((a, b) => a + b, 0) / dists.length) : null }
+    })
+    .sort((a, b) => b.count - a.count || (b.avgDist || 0) - (a.avgDist || 0))
 }
 
 // Every Brewers pitcher's full pitch log in a game, for the arsenal view. `pitchingHalf` is the

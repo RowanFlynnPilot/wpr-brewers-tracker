@@ -229,6 +229,43 @@ export async function fetchPlayByPlay(gamePk) {
   return data.allPlays || []
 }
 
+// Every Brewers home run this season, with Statcast batted-ball data + landing coordinates.
+// Pre-filters via the team game log (only games where the Brewers actually homered) so the
+// per-game play-by-play fan-out is ~half the schedule, pooled and failure-tolerant — the same
+// deliberate client-side fan-out pattern as "this day in history".
+export async function fetchSeasonHomeRuns() {
+  const log = await getJSON(`/teams/${TEAM_ID}/stats?stats=gameLog&group=hitting&season=${SEASON}`)
+  const hrGames = (log.stats?.[0]?.splits || []).filter((s) => (s.stat?.homeRuns || 0) > 0 && s.game?.gamePk)
+  const games = await pooled(hrGames, 6, async (s) => {
+    const data = await getJSON(`/game/${s.game.gamePk}/playByPlay`)
+    return { isHome: s.isHome, date: s.date, opp: (s.opponent?.name || '').replace('Milwaukee ', ''), plays: data.allPlays || [] }
+  })
+  const hrs = []
+  games.forEach((g) => {
+    if (!g) return
+    const half = g.isHome ? 'bottom' : 'top'
+    g.plays.filter((p) => p.result?.eventType === 'home_run' && p.about?.halfInning === half).forEach((p) => {
+      const ev = (p.playEvents || []).filter((e) => e.isPitch).pop()
+      const h = ev?.hitData || {}
+      hrs.push({
+        id: p.matchup.batter.id,
+        batter: p.matchup.batter.fullName,
+        date: g.date,
+        opp: g.opp,
+        isHome: g.isHome,
+        inning: p.about.inning,
+        dist: h.totalDistance ?? null,
+        ev: h.launchSpeed ?? null,
+        la: h.launchAngle ?? null,
+        coordX: h.coordinates?.coordX ?? null,
+        coordY: h.coordinates?.coordY ?? null,
+        field: (p.result.description || '').match(/to ([a-z ]*field)/i)?.[1]?.trim() || '',
+      })
+    })
+  })
+  return hrs
+}
+
 // Active roster with season stats hydrated in a single call.
 export async function fetchRosterStats() {
   const data = await getJSON(`/teams/${TEAM_ID}/roster?rosterType=active&hydrate=person(stats(type=season,season=${SEASON}))`)
