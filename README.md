@@ -34,19 +34,31 @@ Live URL: `https://rowanflynnpilot.github.io/wpr-brewers-tracker/`
 
 ## Embed
 
-Paste into a WordPress **Custom HTML** block:
+The tool is organized into tabs (Season / Schedule / Hitters / Pitching) and **auto-resizes**:
+it posts its height to the host page on every tab switch, so the iframe always fits the active
+tab with no inner scroll. Paste BOTH the iframe and the little script into a WordPress
+**Custom HTML** block:
 
 ```html
-<iframe src="https://rowanflynnpilot.github.io/wpr-brewers-tracker/"
-        style="width:100%;border:0;height:2600px" loading="lazy"
+<iframe id="wpr-brewers" src="https://rowanflynnpilot.github.io/wpr-brewers-tracker/"
+        style="width:100%;border:0;height:1600px" loading="lazy"
         allow="web-share; clipboard-write"
         title="The Brewers, by the numbers — live stats tracker"></iframe>
+<script>
+window.addEventListener('message', function (e) {
+  if (e.origin !== 'https://rowanflynnpilot.github.io') return
+  if (e.data && e.data.type === 'wpr-brewers-height') {
+    var f = document.getElementById('wpr-brewers')
+    if (f && e.data.height) f.style.height = e.data.height + 'px'
+  }
+})
+</script>
 ```
 
-The `height` is a taste knob — bigger shows more before the inner scrollbar takes over.
+The `height` in the style is just a first-paint fallback (the script takes over once it loads).
 `allow` lets the share button use the native share sheet / clipboard inside the iframe.
 Embedded views are tracked automatically (they appear in Plausible with
-wausaupilotandreview.com as the source).
+wausaupilotandreview.com as the source); tab switches fire a `Tab` event.
 
 ### Mini scoreboard (sidebar / in-article)
 

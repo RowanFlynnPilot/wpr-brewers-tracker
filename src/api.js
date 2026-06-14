@@ -1,5 +1,7 @@
-// MLB Stats API client. One job: fetch and return JSON. No fallbacks, no caching layer.
-// The API is public and CORS-open (access-control-allow-origin: *), so this runs in the browser.
+// MLB Stats API client. One job: fetch and return JSON. Fail fast (throw on non-200); the
+// calling component renders its own error state. The API is public and CORS-open, so this runs
+// in the browser. Live feeds (standings, schedules, hero) are NOT cached; only the heavy
+// season-wide scans below memoize for a short TTL so flipping between tabs doesn't refetch them.
 import { SEASON, LEAGUE_ID, DIVISION_ID, TEAM_ID, DIVISION, TEAM_NAMES } from './config.js'
 
 const BASE = 'https://statsapi.mlb.com/api/v1'
@@ -9,6 +11,18 @@ async function getJSON(path) {
   const res = await fetch(`${BASE}${path}`)
   if (!res.ok) throw new Error(`MLB Stats API ${res.status} for ${path}`)
   return res.json()
+}
+
+// Session memo with a TTL — shares one in-flight promise across concurrent callers (e.g. the
+// strikeout/arsenal/game-flow pickers all asking for the season game list at once) and avoids
+// refetching the expensive scans when a reader returns to a tab. Failures aren't cached.
+const _memo = new Map()
+function cached(key, ttl, fn) {
+  const hit = _memo.get(key)
+  if (hit && Date.now() - hit.t < ttl) return hit.p
+  const p = fn().catch((e) => { _memo.delete(key); throw e })
+  _memo.set(key, { t: Date.now(), p })
+  return p
 }
 
 // Local calendar dates, not UTC — toISOString() rolls to "tomorrow" after 7 PM Central,
@@ -199,135 +213,147 @@ export async function fetchLiveExtras(gamePk) {
 
 // MLB-wide leaders for the milestone-watch categories → { category: { personId: {rank, value, tied} } }.
 // Lets the milestone chips add league context ("tied for the MLB lead in wins").
-export async function fetchLeagueLeaders() {
-  const [hit, pit] = await Promise.all([
-    getJSON(`/stats/leaders?leaderCategories=homeRuns,runsBattedIn,hits,stolenBases&season=${SEASON}&sportId=1&statGroup=hitting&limit=10`),
-    getJSON(`/stats/leaders?leaderCategories=wins,strikeouts,saves&season=${SEASON}&sportId=1&statGroup=pitching&limit=10`),
-  ])
-  const map = {}
-  ;[...(hit.leagueLeaders || []), ...(pit.leagueLeaders || [])].forEach((c) => {
-    const atRank = {}
-    c.leaders.forEach((l) => { atRank[l.rank] = (atRank[l.rank] || 0) + 1 })
-    const byPerson = {}
-    c.leaders.forEach((l) => { byPerson[l.person.id] = { rank: l.rank, value: l.value, tied: atRank[l.rank] > 1 } })
-    map[c.leaderCategory] = byPerson
-  })
-  return map
-}
-
-// Completed regular-season Brewers games, newest first — the strikeout tracker's game picker.
-export async function fetchSeasonFinals() {
-  const data = await getJSON(`/schedule?sportId=1&teamId=${TEAM_ID}&startDate=${SEASON}-03-01&endDate=${today()}&hydrate=team`)
-  const seen = new Set() // a rescheduled game appears twice — once as a scoreless placeholder on
-  // its original date, once with the real result. Drop scoreless records first, then dedupe by
-  // gamePk so the played game (with scores) is the one kept.
-  const games = data.dates
-    .flatMap((d) => d.games)
-    .filter((g) => g.gameType === 'R' && g.status.abstractGameState === 'Final')
-    .filter((g) => g.teams.home.score != null && g.teams.away.score != null)
-    .filter((g) => (seen.has(g.gamePk) ? false : seen.add(g.gamePk)))
-    .map((g) => {
-      const home = g.teams.home.team.id === TEAM_ID
-      const opp = (home ? g.teams.away : g.teams.home).team
-      return {
-        gamePk: g.gamePk,
-        date: g.officialDate || g.gameDate.slice(0, 10),
-        home,
-        oppName: opp.teamName || opp.name.replace('Milwaukee ', ''),
-        me: g.teams[home ? 'home' : 'away'].score,
-        them: g.teams[home ? 'away' : 'home'].score,
-      }
+export function fetchLeagueLeaders() {
+  return cached('leaders', 300000, async () => {
+    const [hit, pit] = await Promise.all([
+      getJSON(`/stats/leaders?leaderCategories=homeRuns,runsBattedIn,hits,stolenBases&season=${SEASON}&sportId=1&statGroup=hitting&limit=10`),
+      getJSON(`/stats/leaders?leaderCategories=wins,strikeouts,saves&season=${SEASON}&sportId=1&statGroup=pitching&limit=10`),
+    ])
+    const map = {}
+    ;[...(hit.leagueLeaders || []), ...(pit.leagueLeaders || [])].forEach((c) => {
+      const atRank = {}
+      c.leaders.forEach((l) => { atRank[l.rank] = (atRank[l.rank] || 0) + 1 })
+      const byPerson = {}
+      c.leaders.forEach((l) => { byPerson[l.person.id] = { rank: l.rank, value: l.value, tied: atRank[l.rank] > 1 } })
+      map[c.leaderCategory] = byPerson
     })
-  return games.reverse()
+    return map
+  })
 }
 
-// Raw play-by-play for one game (strikeout tracker derives pitch-level data from this).
-export async function fetchPlayByPlay(gamePk) {
-  const data = await getJSON(`/game/${gamePk}/playByPlay`)
-  return data.allPlays || []
+// Completed regular-season Brewers games, newest first — the stat lab's game picker (cached:
+// every tracker that has a game dropdown shares this one fetch).
+export function fetchSeasonFinals() {
+  return cached('finals', 120000, async () => {
+    const data = await getJSON(`/schedule?sportId=1&teamId=${TEAM_ID}&startDate=${SEASON}-03-01&endDate=${today()}&hydrate=team`)
+    const seen = new Set() // a rescheduled game appears twice — once as a scoreless placeholder on
+    // its original date, once with the real result. Drop scoreless records first, then dedupe by
+    // gamePk so the played game (with scores) is the one kept.
+    const games = data.dates
+      .flatMap((d) => d.games)
+      .filter((g) => g.gameType === 'R' && g.status.abstractGameState === 'Final')
+      .filter((g) => g.teams.home.score != null && g.teams.away.score != null)
+      .filter((g) => (seen.has(g.gamePk) ? false : seen.add(g.gamePk)))
+      .map((g) => {
+        const home = g.teams.home.team.id === TEAM_ID
+        const opp = (home ? g.teams.away : g.teams.home).team
+        return {
+          gamePk: g.gamePk,
+          date: g.officialDate || g.gameDate.slice(0, 10),
+          home,
+          oppName: opp.teamName || opp.name.replace('Milwaukee ', ''),
+          me: g.teams[home ? 'home' : 'away'].score,
+          them: g.teams[home ? 'away' : 'home'].score,
+        }
+      })
+    return games.reverse()
+  })
+}
+
+// Raw play-by-play for one game — cached (a completed game's play-by-play is static, and the
+// spray + HR scans reuse the same games), so reopening a tab/game is instant.
+export function fetchPlayByPlay(gamePk) {
+  return cached(`pbp:${gamePk}`, 600000, async () => {
+    const data = await getJSON(`/game/${gamePk}/playByPlay`)
+    return data.allPlays || []
+  })
 }
 
 // Every Brewers home run this season, with Statcast batted-ball data + landing coordinates.
 // Pre-filters via the team game log (only games where the Brewers actually homered) so the
 // per-game play-by-play fan-out is ~half the schedule, pooled and failure-tolerant — the same
 // deliberate client-side fan-out pattern as "this day in history".
-export async function fetchSeasonHomeRuns() {
-  const log = await getJSON(`/teams/${TEAM_ID}/stats?stats=gameLog&group=hitting&season=${SEASON}`)
-  const hrGames = (log.stats?.[0]?.splits || []).filter((s) => (s.stat?.homeRuns || 0) > 0 && s.game?.gamePk)
-  const games = await pooled(hrGames, 6, async (s) => {
-    const data = await getJSON(`/game/${s.game.gamePk}/playByPlay`)
-    return { isHome: s.isHome, date: s.date, opp: TEAM_NAMES[s.opponent?.id] || '', plays: data.allPlays || [] }
-  })
-  const hrs = []
-  games.forEach((g) => {
-    if (!g) return
-    const half = g.isHome ? 'bottom' : 'top'
-    g.plays.filter((p) => p.result?.eventType === 'home_run' && p.about?.halfInning === half).forEach((p) => {
-      const ev = (p.playEvents || []).filter((e) => e.isPitch).pop()
-      const h = ev?.hitData || {}
-      hrs.push({
-        id: p.matchup.batter.id,
-        batter: p.matchup.batter.fullName,
-        date: g.date,
-        opp: g.opp,
-        isHome: g.isHome,
-        inning: p.about.inning,
-        dist: h.totalDistance ?? null,
-        ev: h.launchSpeed ?? null,
-        la: h.launchAngle ?? null,
-        coordX: h.coordinates?.coordX ?? null,
-        coordY: h.coordinates?.coordY ?? null,
-        field: (p.result.description || '').match(/to ([a-z ]*field)/i)?.[1]?.trim() || '',
+export function fetchSeasonHomeRuns() {
+  return cached('homeRuns', 300000, async () => {
+    const log = await getJSON(`/teams/${TEAM_ID}/stats?stats=gameLog&group=hitting&season=${SEASON}`)
+    const hrGames = (log.stats?.[0]?.splits || []).filter((s) => (s.stat?.homeRuns || 0) > 0 && s.game?.gamePk)
+    const games = await pooled(hrGames, 6, async (s) => {
+      const plays = await fetchPlayByPlay(s.game.gamePk) // shares the play-by-play cache with the spray scan
+      return { isHome: s.isHome, date: s.date, opp: TEAM_NAMES[s.opponent?.id] || '', plays }
+    })
+    const hrs = []
+    games.forEach((g) => {
+      if (!g) return
+      const half = g.isHome ? 'bottom' : 'top'
+      g.plays.filter((p) => p.result?.eventType === 'home_run' && p.about?.halfInning === half).forEach((p) => {
+        const ev = (p.playEvents || []).filter((e) => e.isPitch).pop()
+        const h = ev?.hitData || {}
+        hrs.push({
+          id: p.matchup.batter.id,
+          batter: p.matchup.batter.fullName,
+          date: g.date,
+          opp: g.opp,
+          isHome: g.isHome,
+          inning: p.about.inning,
+          dist: h.totalDistance ?? null,
+          ev: h.launchSpeed ?? null,
+          la: h.launchAngle ?? null,
+          coordX: h.coordinates?.coordX ?? null,
+          coordY: h.coordinates?.coordY ?? null,
+          field: (p.result.description || '').match(/to ([a-z ]*field)/i)?.[1]?.trim() || '',
+        })
       })
     })
+    return hrs
   })
-  return hrs
 }
 
 // Every Brewers batted ball this season (for the spray chart), grouped later by hitter. Fans out
 // across the full schedule — heavier than the HR fetch (can't pre-filter), so it's loaded once on
 // demand and cached by the component. Pooled + failure-tolerant, same pattern as the other scans.
-export async function fetchSeasonBattedBalls() {
-  const games = await fetchSeasonFinals() // newest-first
-  // Tag each game with its series (consecutive games vs the same opponent at the same venue),
-  // so the spray chart can filter by month or by series.
-  const meta = {}
-  let series = -1, prevKey = null
-  ;[...games].reverse().forEach((g) => {
-    const key = `${g.home ? 'vs' : '@'}${g.oppName}`
-    if (key !== prevKey) { series++; prevKey = key }
-    meta[g.gamePk] = { date: g.date, opp: g.oppName, home: g.home, seriesId: series }
-  })
-  const fetched = await pooled(games, 8, async (g) => {
-    const data = await getJSON(`/game/${g.gamePk}/playByPlay`)
-    return { gamePk: g.gamePk, home: g.home, plays: data.allPlays || [] }
-  })
-  const balls = []
-  fetched.forEach((r) => {
-    if (!r) return
-    const m = meta[r.gamePk] || {}
-    const half = r.home ? 'bottom' : 'top'
-    r.plays.filter((p) => p.about?.halfInning === half).forEach((p) => {
-      const ev = (p.playEvents || []).filter((e) => e.isPitch).pop()
-      const c = ev?.hitData?.coordinates
-      if (!c || c.coordX == null) return // balls in play only (has landing coordinates)
-      balls.push({
-        id: p.matchup.batter.id,
-        name: p.matchup.batter.fullName,
-        coordX: c.coordX,
-        coordY: c.coordY,
-        event: p.result?.eventType || '',
-        dist: ev.hitData.totalDistance ?? null,
-        ev: ev.hitData.launchSpeed ?? null,
-        gamePk: r.gamePk,
-        date: m.date,
-        opp: m.opp,
-        home: m.home,
-        seriesId: m.seriesId,
+export function fetchSeasonBattedBalls() {
+  return cached('battedBalls', 300000, async () => {
+    const games = await fetchSeasonFinals() // newest-first
+    // Tag each game with its series (consecutive games vs the same opponent at the same venue),
+    // so the spray chart can filter by month or by series.
+    const meta = {}
+    let series = -1, prevKey = null
+    ;[...games].reverse().forEach((g) => {
+      const key = `${g.home ? 'vs' : '@'}${g.oppName}`
+      if (key !== prevKey) { series++; prevKey = key }
+      meta[g.gamePk] = { date: g.date, opp: g.oppName, home: g.home, seriesId: series }
+    })
+    const fetched = await pooled(games, 8, async (g) => {
+      const plays = await fetchPlayByPlay(g.gamePk)
+      return { gamePk: g.gamePk, home: g.home, plays }
+    })
+    const balls = []
+    fetched.forEach((r) => {
+      if (!r) return
+      const m = meta[r.gamePk] || {}
+      const half = r.home ? 'bottom' : 'top'
+      r.plays.filter((p) => p.about?.halfInning === half).forEach((p) => {
+        const ev = (p.playEvents || []).filter((e) => e.isPitch).pop()
+        const c = ev?.hitData?.coordinates
+        if (!c || c.coordX == null) return // balls in play only (has landing coordinates)
+        balls.push({
+          id: p.matchup.batter.id,
+          name: p.matchup.batter.fullName,
+          coordX: c.coordX,
+          coordY: c.coordY,
+          event: p.result?.eventType || '',
+          dist: ev.hitData.totalDistance ?? null,
+          ev: ev.hitData.launchSpeed ?? null,
+          gamePk: r.gamePk,
+          date: m.date,
+          opp: m.opp,
+          home: m.home,
+          seriesId: m.seriesId,
+        })
       })
     })
+    return balls
   })
-  return balls
 }
 
 // Per-play win probability for one game (game-flow chart derives the line + biggest swing).

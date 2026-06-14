@@ -3,8 +3,10 @@ import { theme } from './theme.js'
 import { SPONSOR_DISCLAIMER, WATCH_PARTY, WPR_NEWS } from './config.js'
 import { fetchStandingsBundle, fetchDivisionSchedules, fetchRosterStats, fetchLeagueLeaders } from './api.js'
 import { lastFinalGame } from './games.js'
-import { initAnalytics } from './analytics.js'
+import { initAnalytics, track } from './analytics.js'
+import { setupAutoResize } from './autosize.js'
 import Masthead from './components/Masthead.jsx'
+import TabBar from './components/TabBar.jsx'
 import BrewersBanner from './components/BrewersBanner.jsx'
 import GameHero from './components/GameHero.jsx'
 import Section from './components/Section.jsx'
@@ -27,6 +29,16 @@ import { Loading } from './components/Status.jsx'
 
 // Recharts is the heaviest dependency — load the race chart in its own chunk.
 const Race = lazy(() => import('./components/Race.jsx'))
+
+// The sections grouped into tabs (the page is too tall as one scroll). The live game hero lives
+// on the default "Season" tab. Each tab renders only when active, so its heavy season-wide
+// fetches fire only when a reader opens it (and the API memoizes them across revisits).
+const TABS = [
+  { id: 'season', label: 'Season' },
+  { id: 'schedule', label: 'Schedule' },
+  { id: 'hitters', label: 'Hitters' },
+  { id: 'pitching', label: 'Pitching' },
+]
 
 // Subtle "Updated Xm ago" stamp; re-renders every 30s so the relative time stays current.
 function UpdatedStamp({ at }) {
@@ -59,6 +71,7 @@ export default function App() {
   // Per-feed failure flags so a failed FIRST load shows an error state instead of an eternal
   // skeleton. Once a feed has data, later failures keep the prior data (flag cleared on success).
   const [errors, setErrors] = useState({})
+  const [tab, setTab] = useState('season')
 
   // Refresh on a gentle interval (and on tab focus) so the whole page — not just the hero — stays live.
   const load = useCallback(() => {
@@ -73,12 +86,15 @@ export default function App() {
 
   useEffect(() => {
     initAnalytics()
+    setupAutoResize()
     load()
     const id = setInterval(() => { if (!document.hidden) load() }, 120000)
     const onVisible = () => { if (!document.hidden) load() }
     document.addEventListener('visibilitychange', onVisible)
     return () => { clearInterval(id); document.removeEventListener('visibilitychange', onVisible) }
   }, [load])
+
+  const changeTab = (id) => { setTab(id); track('Tab', { tab: id }); window.scrollTo(0, 0) }
 
   const lastGame = schedules ? lastFinalGame(schedules) : null
   const milestones = roster ? milestoneWatch(roster, leaders) : []
@@ -89,25 +105,46 @@ export default function App() {
       <BrewersBanner />
       <div style={{ maxWidth: 880, margin: '0 auto', padding: '0 20px' }}>
         <UpdatedStamp at={updatedAt} />
-        <GameHero />
-        <Section kicker="Season pulse" title="Where things stand"><Pulse standings={standings} lastGame={lastGame} ranks={ranks} error={errors.standings} /></Section>
-        {milestones.length > 0 && <Section kicker="On the verge" title="Milestone watch"><MilestoneWatch items={milestones} /></Section>}
-        <Section kicker="NL Central" title="The standings"><Standings standings={standings} schedules={schedules} error={errors.standings} /></Section>
-        <Section kicker="The division race" title="NL Central, day by day">
-          <Suspense fallback={<Loading block />}><Race schedules={schedules} error={errors.schedules} /></Suspense>
-        </Section>
-        <Section kicker="Recent & upcoming" title="The schedule"><Schedule /></Section>
-        {WPR_NEWS && <Section kicker="From the newsroom" title="WPR Brewers coverage"><Coverage /></Section>}
-        <SponsorBand />
-        {WATCH_PARTY && <Section kicker="Where to watch" title="Catch the games this week"><WhereToWatch venue={WATCH_PARTY} /></Section>}
-        <Section kicker="From the vault" title="This day in Brewers history"><ThisDay /></Section>
-        <Section kicker="At the plate & on the mound" title="Team leaders"><Players roster={roster} error={errors.roster} /></Section>
-        <Section kicker="Pitch by pitch" title="Strikeout tracker"><Strikeouts /></Section>
-        <Section kicker="Off the bat" title="Home run tracker"><HomeRuns /></Section>
-        <Section kicker="On the mound" title="Pitch arsenal"><Arsenal /></Section>
-        <Section kicker="How it unfolded" title="Game flow"><GameFlow /></Section>
-        <Section kicker="Hot or not" title="Hitter form"><HotHitter roster={roster} /></Section>
-        <Section kicker="Putting the ball in play" title="Spray chart"><Spray /></Section>
+        <TabBar tabs={TABS} active={tab} onChange={changeTab} />
+
+        {tab === 'season' && (
+          <>
+            <GameHero />
+            <Section kicker="Season pulse" title="Where things stand"><Pulse standings={standings} lastGame={lastGame} ranks={ranks} error={errors.standings} /></Section>
+            {milestones.length > 0 && <Section kicker="On the verge" title="Milestone watch"><MilestoneWatch items={milestones} /></Section>}
+            <Section kicker="NL Central" title="The standings"><Standings standings={standings} schedules={schedules} error={errors.standings} /></Section>
+            <Section kicker="The division race" title="NL Central, day by day">
+              <Suspense fallback={<Loading block />}><Race schedules={schedules} error={errors.schedules} /></Suspense>
+            </Section>
+          </>
+        )}
+
+        {tab === 'schedule' && (
+          <>
+            <Section kicker="Recent & upcoming" title="The schedule"><Schedule /></Section>
+            {WPR_NEWS && <Section kicker="From the newsroom" title="WPR Brewers coverage"><Coverage /></Section>}
+            <SponsorBand />
+            {WATCH_PARTY && <Section kicker="Where to watch" title="Catch the games this week"><WhereToWatch venue={WATCH_PARTY} /></Section>}
+            <Section kicker="From the vault" title="This day in Brewers history"><ThisDay /></Section>
+          </>
+        )}
+
+        {tab === 'hitters' && (
+          <>
+            <Section kicker="At the plate & on the mound" title="Team leaders"><Players roster={roster} error={errors.roster} /></Section>
+            <Section kicker="Off the bat" title="Home run tracker"><HomeRuns /></Section>
+            <Section kicker="Putting the ball in play" title="Spray chart"><Spray /></Section>
+            <Section kicker="Hot or not" title="Hitter form"><HotHitter roster={roster} /></Section>
+          </>
+        )}
+
+        {tab === 'pitching' && (
+          <>
+            <Section kicker="Pitch by pitch" title="Strikeout tracker"><Strikeouts /></Section>
+            <Section kicker="On the mound" title="Pitch arsenal"><Arsenal /></Section>
+            <Section kicker="How it unfolded" title="Game flow"><GameFlow /></Section>
+          </>
+        )}
 
         <footer style={{ borderTop: `1px solid ${theme.rule}`, padding: '22px 0 44px', fontFamily: theme.sans, fontSize: 11, color: theme.muted, lineHeight: 1.6 }}>
           Data via the MLB Stats API · refreshes live. Not affiliated with or endorsed by Major League Baseball or the Milwaukee Brewers.<br />

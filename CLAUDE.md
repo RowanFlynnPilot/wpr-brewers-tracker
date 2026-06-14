@@ -46,8 +46,18 @@ MLB Stats API (statsapi.mlb.com) → fetch() in browser → React/Vite → GitHu
   on a strike zone). Each card is one link to the full tracker; the embed's `?to=` param overrides
   the destination (http/https only — shared `src/embed.js` `destination()`). Clicks fire a
   `Mini Click` event tagged with `widget`. Keep them tiny — no service worker, no recharts.
+- Sections are grouped into tabs in `App.jsx` (`TABS` + `TabBar.jsx`): Season (hero + pulse +
+  standings + race), Schedule (schedule + coverage + sponsor band + this-day), Hitters (leaders +
+  HR + spray + form), Pitching (strikeout + arsenal + game flow). Only the active tab renders, so a
+  tab's heavy season-wide fetches fire only when opened — and `api.js` memoizes those scans
+  (`cached()`, short TTL) so flipping back to a tab is instant, not a refetch. Masthead, banner +
+  title sponsor, the updated stamp, and the footer stay pinned across all tabs. Tab switches fire a
+  Plausible `Tab` event.
+- `src/autosize.js` — when embedded, posts document height to the host on every change
+  (ResizeObserver) so the iframe fits the active tab (no fixed height / inner scroll). The host
+  embed listens for `{ type: 'wpr-brewers-height' }` (snippet in README). No-op when standalone.
 - `src/components/` — one file per concern (separation of concerns):
-  - `Masthead`, `BrewersBanner`, `Section` — chrome.
+  - `Masthead`, `BrewersBanner`, `Section`, `TabBar` — chrome.
   - `Pulse`, `Standings` — consume shared standings fetched once in `App`.
   - `Race`, `Schedule`, `Players` — self-contained, fetch their own feed.
   - `Status` — `Loading` + `ErrorState`.
