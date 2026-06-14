@@ -118,9 +118,8 @@ WPR's coverage.
 (Shipped: pitcher stat lines, expected-wins note, form strips, series framing, wild-card
 context, first-pitch forecast, hero linescore, share button, the stat lab — strikeout tracker,
 home run tracker w/ estimated parks, pitch arsenal, game-flow win-probability chart, hot-hitter
-rolling-OPS form — and the WPR newsroom feed + three mini embeds.)
+rolling-OPS form, full batted-ball spray chart — and the WPR newsroom feed + three mini embeds.)
 - A localStorage "pick'em" (call tonight's game, graded after the final) — sponsorable. Owner
   wants to clear this with WPR before building.
-- Full batted-ball spray chart for a hitter (all hit types, not just HRs) — next up.
 - Plausible public dashboard links per sponsor once the account is live.
 Keep each as a small, self-contained addition.

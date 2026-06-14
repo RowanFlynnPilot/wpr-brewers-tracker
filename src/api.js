@@ -266,6 +266,37 @@ export async function fetchSeasonHomeRuns() {
   return hrs
 }
 
+// Every Brewers batted ball this season (for the spray chart), grouped later by hitter. Fans out
+// across the full schedule — heavier than the HR fetch (can't pre-filter), so it's loaded once on
+// demand and cached by the component. Pooled + failure-tolerant, same pattern as the other scans.
+export async function fetchSeasonBattedBalls() {
+  const games = await fetchSeasonFinals()
+  const fetched = await pooled(games, 8, async (g) => {
+    const data = await getJSON(`/game/${g.gamePk}/playByPlay`)
+    return { home: g.home, plays: data.allPlays || [] }
+  })
+  const balls = []
+  fetched.forEach((r) => {
+    if (!r) return
+    const half = r.home ? 'bottom' : 'top'
+    r.plays.filter((p) => p.about?.halfInning === half).forEach((p) => {
+      const ev = (p.playEvents || []).filter((e) => e.isPitch).pop()
+      const c = ev?.hitData?.coordinates
+      if (!c || c.coordX == null) return // balls in play only (has landing coordinates)
+      balls.push({
+        id: p.matchup.batter.id,
+        name: p.matchup.batter.fullName,
+        coordX: c.coordX,
+        coordY: c.coordY,
+        event: p.result?.eventType || '',
+        dist: ev.hitData.totalDistance ?? null,
+        ev: ev.hitData.launchSpeed ?? null,
+      })
+    })
+  })
+  return balls
+}
+
 // Per-play win probability for one game (game-flow chart derives the line + biggest swing).
 export async function fetchWinProbability(gamePk) {
   const data = await getJSON(`/game/${gamePk}/winProbability`)
