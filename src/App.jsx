@@ -18,6 +18,8 @@ import MilestoneWatch, { milestoneWatch } from './components/MilestoneWatch.jsx'
 import SponsorBand from './components/SponsorBand.jsx'
 import Coverage from './components/Coverage.jsx'
 import Strikeouts from './components/Strikeouts.jsx'
+import HomeRuns from './components/HomeRuns.jsx'
+import Arsenal from './components/Arsenal.jsx'
 import { Loading } from './components/Status.jsx'
 
 // Recharts is the heaviest dependency — load the race chart in its own chunk.
@@ -96,6 +98,8 @@ export default function App() {
         <Section kicker="From the vault" title="This day in Brewers history"><ThisDay /></Section>
         <Section kicker="At the plate & on the mound" title="Team leaders"><Players roster={roster} error={errors.roster} /></Section>
         <Section kicker="Pitch by pitch" title="Strikeout tracker"><Strikeouts /></Section>
+        <Section kicker="Off the bat" title="Home run tracker"><HomeRuns /></Section>
+        <Section kicker="On the mound" title="Pitch arsenal"><Arsenal /></Section>
 
         <footer style={{ borderTop: `1px solid ${theme.rule}`, padding: '22px 0 44px', fontFamily: theme.sans, fontSize: 11, color: theme.muted, lineHeight: 1.6 }}>
           Data via the MLB Stats API · refreshes live. Not affiliated with or endorsed by Major League Baseball or the Milwaukee Brewers.<br />

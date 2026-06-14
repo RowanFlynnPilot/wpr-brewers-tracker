@@ -34,6 +34,65 @@ export function recentResults(schedules, teamId, n = 10) {
   return finals(team.dates, teamId).slice(-n).map((g) => g.won)
 }
 
+// Brewers home runs in a game, with Statcast batted-ball data + landing coordinates for the
+// spray chart. `battingHalf` is the half the Brewers bat in ('bottom' home, 'top' away).
+export function gameHomeRuns(allPlays, battingHalf) {
+  const hrs = (allPlays || []).filter((p) => p.result?.eventType === 'home_run' && p.about?.halfInning === battingHalf)
+  return hrs.map((p) => {
+    const ev = (p.playEvents || []).filter((e) => e.isPitch).pop()
+    const h = ev?.hitData || {}
+    const field = (p.result.description || '').match(/to ([a-z ]*field)/i)?.[1] || ''
+    return {
+      batter: p.matchup.batter.fullName,
+      inning: p.about.inning,
+      dist: h.totalDistance ?? null,
+      ev: h.launchSpeed ?? null,
+      la: h.launchAngle ?? null,
+      coordX: h.coordinates?.coordX ?? null,
+      coordY: h.coordinates?.coordY ?? null,
+      field: field.trim(),
+    }
+  })
+}
+
+// Every Brewers pitcher's full pitch log in a game, for the arsenal view. `pitchingHalf` is the
+// half the Brewers pitch in ('top' home, 'bottom' away). Pitchers sorted by pitch count (most
+// first); each pitch carries its type, velocity, inning, and outing pitch number.
+export function gamePitchers(allPlays, pitchingHalf) {
+  const byId = new Map()
+  ;(allPlays || []).filter((p) => p.about?.halfInning === pitchingHalf).forEach((p) => {
+    const id = p.matchup.pitcher.id
+    if (!byId.has(id)) byId.set(id, { id, name: p.matchup.pitcher.fullName, pitches: [] })
+    const log = byId.get(id)
+    ;(p.playEvents || []).filter((e) => e.isPitch).forEach((e) => {
+      if (e.pitchData?.startSpeed == null && !e.details?.type?.code) return
+      log.pitches.push({
+        code: e.details?.type?.code || '',
+        type: e.details?.type?.description || 'Pitch',
+        velo: e.pitchData?.startSpeed ?? null,
+        inning: p.about.inning,
+        num: log.pitches.length + 1,
+      })
+    })
+  })
+  return [...byId.values()].filter((p) => p.pitches.length).sort((a, b) => b.pitches.length - a.pitches.length)
+}
+
+// Aggregate a pitch log into per-type usage + velocity, sorted by frequency.
+export function pitchMix(pitches) {
+  const m = new Map()
+  pitches.forEach((p) => {
+    if (!m.has(p.code)) m.set(p.code, { code: p.code, type: p.type, n: 0, sum: 0, max: 0, velos: 0 })
+    const e = m.get(p.code)
+    e.n++
+    if (p.velo != null) { e.sum += p.velo; e.velos++; if (p.velo > e.max) e.max = p.velo }
+  })
+  const total = pitches.length
+  return [...m.values()]
+    .map((e) => ({ code: e.code, type: e.type, n: e.n, pct: Math.round((e.n / total) * 100), avg: e.velos ? e.sum / e.velos : null, max: e.max || null }))
+    .sort((a, b) => b.n - a.n)
+}
+
 // Brewers strikeouts in a game, grouped by pitcher, each with its final (put-away) pitch.
 // `pitchingHalf` is the half-inning the Brewers pitch in ('top' when home, 'bottom' when away),
 // which isolates Brewers pitchers from the opponent's. Pitchers sorted by K count (most first);

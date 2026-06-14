@@ -41,6 +41,19 @@ export const WPR_URL = 'https://wausaupilotandreview.com/'
 // description, and the social-card tags in index.html.
 export const SITE_URL = 'https://rowanflynnpilot.github.io/wpr-brewers-tracker/'
 
+// Pitch-type colors (by MLB pitch code), grouped by family — shared by the strikeout tracker
+// and the pitch arsenal. Fallback gray for anything unmapped.
+export const PITCH_COLORS = {
+  FF: '#d8402f', FA: '#d8402f',                 // four-seam / fastball — red
+  SI: '#e8842a', FT: '#e8842a',                 // sinker / two-seam — orange
+  FC: '#8e44ad',                                // cutter — purple
+  SL: '#c8a23a', ST: '#b07d1f', SV: '#c8a23a',  // slider / sweeper / slurve — gold
+  CU: '#2e6fb0', KC: '#2e6fb0', CS: '#2e6fb0',  // curve / knuckle-curve — blue
+  CH: '#2e9e6a', FS: '#16a0a0', FO: '#16a0a0',  // change / split — green/teal
+  KN: '#777',
+}
+export const pitchColor = (code) => PITCH_COLORS[code] || '#6b6b6b'
+
 // WPR's own Brewers coverage, pulled live from the WordPress REST API (keyless + CORS-open,
 // same rules as the MLB/weather clients). `categoryId` is the "Milwaukee Brewers" category
 // (slug milwaukee-brewers); `archive` is its public page. Set WPR_NEWS to null to hide the

@@ -1,21 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { theme } from '../theme.js'
+import { pitchColor } from '../config.js'
 import { fetchSeasonFinals, fetchPlayByPlay } from '../api.js'
 import { gameStrikeouts } from '../games.js'
 import { useIsNarrow } from '../useIsNarrow.js'
 import { Loading } from './Status.jsx'
-
-// Pitch-type colors (by MLB pitch code), grouped by family. Fallback gray for anything unmapped.
-const PITCH_COLORS = {
-  FF: '#d8402f', FA: '#d8402f',                 // four-seam / fastball — red
-  SI: '#e8842a', FT: '#e8842a',                 // sinker / two-seam — orange
-  FC: '#8e44ad',                                // cutter — purple
-  SL: '#c8a23a', ST: '#b07d1f', SV: '#c8a23a',  // slider / sweeper / slurve — gold
-  CU: '#2e6fb0', KC: '#2e6fb0', CS: '#2e6fb0',  // curve / knuckle-curve — blue
-  CH: '#2e9e6a', FS: '#16a0a0', FO: '#16a0a0',  // change / split — green/teal
-  KN: '#777',
-}
-const pitchColor = (code) => PITCH_COLORS[code] || theme.muted
 
 // Strike-zone plot domain, in feet (catcher's view: +x = catcher's right, +z = up).
 const X0 = -2, X1 = 2, Z0 = 0.5, Z1 = 4.5
