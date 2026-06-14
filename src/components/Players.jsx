@@ -76,16 +76,20 @@ function buildLeaders(roster) {
   return { hitters: hitters.slice(0, 8), pitchers: pitchers.slice(0, 8) }
 }
 
-export default function Players({ roster, error }) {
+// `group` selects which side to show: 'hitting' (batting spotlight + table), 'pitching'
+// (pitching spotlight + table), or undefined for both. Lets the leaders live in their tab.
+export default function Players({ roster, error, group }) {
   if (!roster) return error ? <ErrorState /> : <Loading />
   const leaders = buildLeaders(roster)
+  const showHit = group !== 'pitching'
+  const showPit = group !== 'hitting'
 
   return (
     <div>
-      <Spotlight hitter={leaders.hitters[0]} pitcher={leaders.pitchers[0]} />
+      <Spotlight hitter={showHit ? leaders.hitters[0] : null} pitcher={showPit ? leaders.pitchers[0] : null} />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 36 }}>
-        <LeaderTable title="Batting leaders · by OPS" rows={leaders.hitters} columns={[{ key: 'avg', label: 'AVG' }, { key: 'hr', label: 'HR' }, { key: 'rbi', label: 'RBI' }, { key: 'ops', label: 'OPS' }]} />
-        <LeaderTable title="Pitching leaders · by ERA" rows={leaders.pitchers} columns={[{ key: 'era', label: 'ERA' }, { key: 'w', label: 'W' }, { key: 'so', label: 'SO' }, { key: 'sv', label: 'SV' }]} />
+        {showHit && <LeaderTable title="Batting leaders · by OPS" rows={leaders.hitters} columns={[{ key: 'avg', label: 'AVG' }, { key: 'hr', label: 'HR' }, { key: 'rbi', label: 'RBI' }, { key: 'ops', label: 'OPS' }]} />}
+        {showPit && <LeaderTable title="Pitching leaders · by ERA" rows={leaders.pitchers} columns={[{ key: 'era', label: 'ERA' }, { key: 'w', label: 'W' }, { key: 'so', label: 'SO' }, { key: 'sv', label: 'SV' }]} />}
       </div>
     </div>
   )

@@ -131,7 +131,7 @@ export default function App() {
 
         {tab === 'hitters' && (
           <>
-            <Section kicker="At the plate & on the mound" title="Team leaders"><Players roster={roster} error={errors.roster} /></Section>
+            <Section kicker="At the plate" title="Batting leaders"><Players roster={roster} error={errors.roster} group="hitting" /></Section>
             <Section kicker="Off the bat" title="Home run tracker"><HomeRuns /></Section>
             <Section kicker="Putting the ball in play" title="Spray chart"><Spray /></Section>
             <Section kicker="Hot or not" title="Hitter form"><HotHitter roster={roster} /></Section>
@@ -140,6 +140,7 @@ export default function App() {
 
         {tab === 'pitching' && (
           <>
+            <Section kicker="The staff" title="Pitching leaders"><Players roster={roster} error={errors.roster} group="pitching" /></Section>
             <Section kicker="Pitch by pitch" title="Strikeout tracker"><Strikeouts /></Section>
             <Section kicker="On the mound" title="Pitch arsenal"><Arsenal /></Section>
             <Section kicker="How it unfolded" title="Game flow"><GameFlow /></Section>
