@@ -58,6 +58,10 @@ MLB Stats API (statsapi.mlb.com) → fetch() in browser → React/Vite → GitHu
   embed listens for `{ type: 'wpr-brewers-height' }` (snippet in README). No-op when standalone.
 - `src/components/` — one file per concern (separation of concerns):
   - `Masthead`, `BrewersBanner`, `Section`, `TabBar` — chrome.
+  - `BookmarkButton` — stickiness nudge pinned in the top bar (all tabs). No browser exposes a
+    programmatic add-bookmark API, so it shows the OS-correct shortcut (⌘/Ctrl + D — which, in the
+    iframe, bookmarks the *host WPR page*) plus a phone-friendly "copy link" to the canonical WPR
+    Brewers page. Fires a Plausible `Bookmark` event (open + `{ action: 'copy' }`).
   - `Pulse`, `Standings` — consume shared standings fetched once in `App`.
   - `Race`, `Schedule`, `Players` — self-contained, fetch their own feed.
   - `Status` — `Loading` + `ErrorState`.

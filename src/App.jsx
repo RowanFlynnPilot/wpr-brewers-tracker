@@ -7,6 +7,7 @@ import { initAnalytics, track } from './analytics.js'
 import { setupAutoResize } from './autosize.js'
 import Masthead from './components/Masthead.jsx'
 import TabBar from './components/TabBar.jsx'
+import BookmarkButton from './components/BookmarkButton.jsx'
 import BrewersBanner from './components/BrewersBanner.jsx'
 import GameHero from './components/GameHero.jsx'
 import Section from './components/Section.jsx'
@@ -51,7 +52,7 @@ function UpdatedStamp({ at }) {
   const mins = Math.floor((Date.now() - at) / 60000)
   const label = mins < 1 ? 'just now' : mins === 1 ? '1 min ago' : `${mins} min ago`
   return (
-    <div style={{ textAlign: 'right', fontFamily: theme.sans, fontSize: 11, color: theme.muted, padding: '12px 0 0' }}>
+    <div style={{ textAlign: 'right', fontFamily: theme.sans, fontSize: 11, color: theme.muted }}>
       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
         <span style={{ width: 6, height: 6, borderRadius: '50%', background: theme.gold }} /> Updated {label} · refreshes live
       </span>
@@ -104,7 +105,10 @@ export default function App() {
       <Masthead />
       <BrewersBanner />
       <div style={{ maxWidth: 880, margin: '0 auto', padding: '0 20px' }}>
-        <UpdatedStamp at={updatedAt} />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '12px 0 0' }}>
+          <BookmarkButton />
+          <UpdatedStamp at={updatedAt} />
+        </div>
         <TabBar tabs={TABS} active={tab} onChange={changeTab} />
 
         {tab === 'season' && (

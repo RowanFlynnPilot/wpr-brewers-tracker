@@ -58,7 +58,9 @@ window.addEventListener('message', function (e) {
 The `height` in the style is just a first-paint fallback (the script takes over once it loads).
 `allow` lets the share button use the native share sheet / clipboard inside the iframe.
 Embedded views are tracked automatically (they appear in Plausible with
-wausaupilotandreview.com as the source); tab switches fire a `Tab` event.
+wausaupilotandreview.com as the source); tab switches fire a `Tab` event, and the "Bookmark"
+button (a stickiness nudge — shows the ⌘/Ctrl + D shortcut plus a copy-link) fires a `Bookmark`
+event. The `clipboard-write` in `allow` is what lets the copy-link work inside the iframe.
 
 ### Mini scoreboard (sidebar / in-article)
 
