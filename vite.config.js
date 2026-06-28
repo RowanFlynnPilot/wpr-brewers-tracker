@@ -15,6 +15,7 @@ export default defineConfig({
         mini: resolve(__dirname, 'mini.html'),
         miniStandings: resolve(__dirname, 'mini-standings.html'),
         miniStrikeouts: resolve(__dirname, 'mini-strikeouts.html'),
+        miniDigest: resolve(__dirname, 'mini-digest.html'),
       },
     },
   },

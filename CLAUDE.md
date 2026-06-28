@@ -43,7 +43,9 @@ MLB Stats API (statsapi.mlb.com) → fetch() in browser → React/Vite → GitHu
 - `mini*.html` + `src/mini*.jsx` — extra Vite entries: compact sidebar/in-article embeds, each
   its own page so they stay lightweight. `MiniGame.jsx` (featured-game scoreboard),
   `MiniStandings.jsx` (NL Central table), `MiniStrikeouts.jsx` (latest game's top-K performance
-  on a strike zone). Each card is one link to the full tracker; the embed's `?to=` param overrides
+  on a strike zone), `MiniDigest.jsx` (newsletter combo: last final w/ winning+losing pitcher via
+  the schedule `decisions` hydrate, next game's probables, and the NL Central table — one card).
+  Each card is one link to the full tracker; the embed's `?to=` param overrides
   the destination (http/https only — shared `src/embed.js` `destination()`). Clicks fire a
   `Mini Click` event tagged with `widget`. Keep them tiny — no service worker, no recharts.
 - Sections are grouped into tabs in `App.jsx` (`TABS` + `TabBar.jsx`): Season (hero + pulse +

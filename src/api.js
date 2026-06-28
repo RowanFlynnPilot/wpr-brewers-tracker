@@ -102,6 +102,21 @@ export async function fetchFeaturedGame() {
   return previews[0] || lastFinal || games[games.length - 1]
 }
 
+// The newsletter "digest" mini needs two games in one shot: the last completed game (with the
+// winning/losing pitcher, via the `decisions` hydrate) and the next scheduled game (probable
+// pitchers). One schedule call over a window around today; the component fetches each pitcher's
+// season line separately (hydrate can't carry those). Fail fast like the rest.
+export async function fetchDigestGames() {
+  const t = new Date()
+  const back = new Date(t); back.setDate(t.getDate() - 12)
+  const fwd = new Date(t); fwd.setDate(t.getDate() + 12)
+  const data = await getJSON(`/schedule?sportId=1&teamId=${TEAM_ID}&startDate=${localDate(back)}&endDate=${localDate(fwd)}&hydrate=team,linescore,decisions,probablePitcher`)
+  const games = data.dates.flatMap((d) => d.games)
+  const finals = games.filter((g) => g.gameType === 'R' && g.status.abstractGameState === 'Final' && g.teams.home.score != null && g.teams.away.score != null)
+  const previews = games.filter((g) => g.status.abstractGameState === 'Preview')
+  return { last: finals[finals.length - 1] || null, next: previews[0] || null }
+}
+
 // One pitcher's season pitching line (ERA, W-L, K, …). Returns the stat object, or null if the
 // pitcher has no season splits yet. Schedule/hydrate can't carry these, so the hero + schedule
 // cards fetch them per probable pitcher on demand.

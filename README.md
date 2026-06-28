@@ -98,8 +98,24 @@ performance from the most recent game (strike-zone plot, pitch types, swinging/l
         title="Brewers strikeout tracker — tap for the full tracker"></iframe>
 ```
 
-Each mini is its own Plausible page (`/mini-standings.html`, `/mini-strikeouts.html`);
-clicks fire a `Mini Click` event tagged with the `widget` (scoreboard/standings/strikeouts).
+### Mini digest (newsletter snapshot)
+
+A taller combo card at `/mini-digest.html` — last completed game (final score + winning/losing
+pitcher), the next game (probable pitchers), and the NL Central standings in one card. Built for
+newsletter / sidebar use. Same `to` + click behavior.
+
+```html
+<iframe src="https://rowanflynnpilot.github.io/wpr-brewers-tracker/mini-digest.html?to=https://wausaupilotandreview.com/milwaukee-brewers/"
+        style="width:100%;border:0;height:480px" loading="lazy"
+        title="Brewers digest — tap for the full tracker"></iframe>
+```
+
+Note: email clients strip `<iframe>`, so this renders on web pages (the WordPress site or a
+"view in browser" newsletter), not inside an emailed newsletter — for email, use a linked image.
+
+Each mini is its own Plausible page (`/mini-standings.html`, `/mini-strikeouts.html`,
+`/mini-digest.html`); clicks fire a `Mini Click` event tagged with the `widget`
+(scoreboard/standings/strikeouts/digest).
 
 ## Configure
 
