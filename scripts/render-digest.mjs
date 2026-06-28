@@ -17,7 +17,16 @@ const out = process.argv[3] || 'dist/digest.png'
 const browser = await chromium.launch()
 try {
   // 2x scale → a crisp ~840px-wide PNG that still looks sharp on retina/HiDPI email clients.
-  const page = await browser.newPage({ deviceScaleFactor: 2, viewport: { width: 480, height: 1000 } })
+  // Pin the locale + timezone to Central: the widget formats game dates/times with toLocale*,
+  // and CI runners are UTC — without this, a 6:40 PM Central game would render as "11:40 PM"
+  // (and night-game dates could roll to the next day). Readers see their own local time; for a
+  // Wisconsin newsletter that's Central, so the baked image matches.
+  const page = await browser.newPage({
+    deviceScaleFactor: 2,
+    viewport: { width: 480, height: 1000 },
+    locale: 'en-US',
+    timezoneId: 'America/Chicago',
+  })
   await page.goto(url, { waitUntil: 'load', timeout: 60000 })
 
   // Wait for real data: the standings table always populates; the two game sections appear
