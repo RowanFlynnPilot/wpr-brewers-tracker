@@ -133,11 +133,11 @@ export default function MiniDigest() {
     const d = last.decisions || {}
 
     const DecRow = ({ tag, color, pitcher, team, stat }) => !pitcher ? null : (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, fontSize: 11, marginTop: 3 }}>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
-          <span style={{ width: 15, height: 15, borderRadius: '50%', background: color, color: '#fff', fontSize: 9, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{tag}</span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, fontSize: 11, marginTop: 5 }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
+          <Headshot id={pitcher.id} size={24} />
           <span style={{ color: theme.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {lastName(pitcher.fullName)}
+            <span style={{ color, fontWeight: 700 }}>{tag}</span> {lastName(pitcher.fullName)}
             <span style={{ color: theme.muted }}> · {team.abbreviation || team.teamName}</span>
           </span>
         </span>
