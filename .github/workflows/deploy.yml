@@ -1,12 +1,19 @@
 name: Deploy to GitHub Pages
 
-# Deploy-only. There is NO scraper and NO scrape cron in this repo — the widget fetches
-# the MLB Stats API directly in the browser. This workflow just builds and publishes.
+# Build + publish. The widget itself has NO scraper and NO data cron — it fetches the MLB Stats
+# API directly in the browser. The ONE scheduled job below exists only to regenerate the EMAIL
+# image (public digest.png): email can't run the live widget, so it's snapshotted to a PNG twice
+# a day. This bakes an image, not a data cache — see scripts/render-digest.mjs.
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    # Refresh the email image twice daily, shortly before the ~8 AM and ~5 PM Central sends.
+    # Cron is UTC and does not follow DST; these land ~6:30 AM / ~3:30 PM Central (CDT).
+    - cron: '30 11 * * *'
+    - cron: '30 20 * * *'
 
 permissions:
   contents: read
@@ -28,6 +35,16 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      # Render the digest widget to dist/digest.png for the email newsletter (see header note).
+      - run: npx playwright install --with-deps chromium
+      - name: Render digest email image
+        run: |
+          npm run preview -- --port 4173 --host 127.0.0.1 &
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:4173/wpr-brewers-tracker/mini-digest.html > /dev/null && break
+            sleep 1
+          done
+          node scripts/render-digest.mjs http://127.0.0.1:4173/wpr-brewers-tracker/mini-digest.html dist/digest.png
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

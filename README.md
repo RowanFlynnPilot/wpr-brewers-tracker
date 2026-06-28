@@ -110,8 +110,28 @@ newsletter / sidebar use. Same `to` + click behavior.
         title="Brewers digest — tap for the full tracker"></iframe>
 ```
 
-Note: email clients strip `<iframe>`, so this renders on web pages (the WordPress site or a
-"view in browser" newsletter), not inside an emailed newsletter — for email, use a linked image.
+Note: email clients strip `<iframe>`, so the iframe above renders on web pages (the WordPress
+site or a "view in browser" newsletter), not inside an emailed newsletter. For **email**, use the
+daily image below instead.
+
+#### Digest as a daily email image
+
+Email can't run the live widget, so the digest is also published as a static PNG that the deploy
+workflow regenerates **twice a day** (≈6:30 AM & 3:30 PM Central — see `cron` in
+`.github/workflows/deploy.yml`). It's a headless screenshot of `mini-digest.html`
+(`scripts/render-digest.mjs`), so the image always matches the live card. Drop this into the
+newsletter's HTML (works in every email client) — the image links to the WPR Brewers page:
+
+```html
+<a href="https://wausaupilotandreview.com/milwaukee-brewers/">
+  <img src="https://rowanflynnpilot.github.io/wpr-brewers-tracker/digest.png"
+       alt="Brewers digest — last game, next game and the NL Central standings"
+       width="600" style="width:100%;max-width:600px;height:auto;border:0;display:block" />
+</a>
+```
+
+The PNG is ~840px wide (2× for retina), so it stays sharp displayed up to 600px. To change the
+refresh times, edit the two `cron` lines in the workflow.
 
 Each mini is its own Plausible page (`/mini-standings.html`, `/mini-strikeouts.html`,
 `/mini-digest.html`); clicks fire a `Mini Click` event tagged with the `widget`
