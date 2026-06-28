@@ -128,10 +128,16 @@ newsletter's HTML (works in every email client) — the image links to the WPR B
        alt="Brewers digest — last game, next game and the NL Central standings"
        width="600" style="width:100%;max-width:600px;height:auto;border:0;display:block" />
 </a>
+<p style="margin:8px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;text-align:center">
+  <a href="https://wausaupilotandreview.com/milwaukee-brewers/"
+     style="color:#12284b;font-weight:bold;text-decoration:none">See the full live Brewers tracker →</a>
+</p>
 ```
 
-The PNG is ~840px wide (2× for retina), so it stays sharp displayed up to 600px. To change the
-refresh times, edit the two `cron` lines in the workflow.
+The image itself is also linked (tapping it opens the tracker), but the text link below makes the
+call-to-action obvious — the image no longer bakes in a "Full tracker" button, since a region
+inside an image can't carry its own link. The PNG is ~840px wide (2× for retina), so it stays
+sharp displayed up to 600px. To change the refresh times, edit the two `cron` lines in the workflow.
 
 Each mini is its own Plausible page (`/mini-standings.html`, `/mini-strikeouts.html`,
 `/mini-digest.html`); clicks fire a `Mini Click` event tagged with the `widget`

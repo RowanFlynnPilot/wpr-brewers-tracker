@@ -11,7 +11,10 @@
 //   node scripts/render-digest.mjs <url> <outPath>
 import { chromium } from 'playwright'
 
-const url = process.argv[2] || 'http://127.0.0.1:4173/wpr-brewers-tracker/mini-digest.html'
+// `image=1` tells MiniDigest this is the email screenshot, so it drops the "Full tracker →"
+// affordance (dead pixels in an image — the email adds a real text link below it instead).
+const base = process.argv[2] || 'http://127.0.0.1:4173/wpr-brewers-tracker/mini-digest.html'
+const url = base + (base.includes('?') ? '&' : '?') + 'image=1'
 const out = process.argv[3] || 'dist/digest.png'
 
 const browser = await chromium.launch()

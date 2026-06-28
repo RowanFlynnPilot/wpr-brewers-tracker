@@ -74,6 +74,11 @@ export default function MiniDigest() {
     return () => { alive = false }
   }, [nextPk]) // eslint-disable-line react-hooks/exhaustive-deps -- pk pins the matchup
 
+  // `?image` is set when this is being screenshotted for the email PNG (see render-digest.mjs).
+  // In that mode the "Full tracker →" affordance is dead pixels (an image can't carry a link to
+  // just that text), so we drop it — the email puts a real text link below the image instead.
+  const imageMode = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('image')
+
   const card = {
     display: 'block', maxWidth: 420, margin: '0 auto', textDecoration: 'none', overflow: 'hidden',
     background: '#fff', border: `1px solid ${theme.rule}`, borderTop: `3px solid ${theme.gold}`,
@@ -97,7 +102,7 @@ export default function MiniDigest() {
             : <span style={{ fontSize: 8.5, color: theme.muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{SPONSORS.header.name}</span>}
         </span>
       ) : <span />}
-      <span style={{ fontSize: 11, fontWeight: 700, color: theme.navy, whiteSpace: 'nowrap' }}>Full tracker {'→'}</span>
+      {!imageMode && <span style={{ fontSize: 11, fontWeight: 700, color: theme.navy, whiteSpace: 'nowrap' }}>Full tracker {'→'}</span>}
     </div>
   )
   const linkProps = { href: destination(), target: '_top', onClick: () => track('Mini Click', { widget: 'digest' }) }
@@ -158,10 +163,7 @@ export default function MiniDigest() {
             <TeamLogo id={opp.team.id} size={22} />
           </span>
         </div>
-        <div style={{ textAlign: 'center', fontSize: 9.5, fontWeight: 700, letterSpacing: '0.1em', color: won ? theme.navy : theme.red, marginTop: 4 }}>
-          {won ? 'BREWERS WIN' : 'BREWERS LOSE'}
-        </div>
-        <div style={{ marginTop: 6 }}>
+        <div style={{ marginTop: 8 }}>
           <DecRow tag="W" color={theme.navy} pitcher={d.winner} team={winTeam} stat={decision?.win} />
           <DecRow tag="L" color={theme.red} pitcher={d.loser} team={lossTeam} stat={decision?.loss} />
           {d.save && (
