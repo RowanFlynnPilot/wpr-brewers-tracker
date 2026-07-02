@@ -398,6 +398,26 @@ export async function fetchWinProbability(gamePk) {
   return Array.isArray(data) ? data : []
 }
 
+// The opposing probable's throwing hand — the schedule hydrate doesn't carry it.
+export async function fetchPitcherHand(personId) {
+  const data = await getJSON(`/people/${personId}`)
+  return data.people?.[0]?.pitchHand?.code || null
+}
+
+// One hitter's season splits vs LHP/RHP (cached — the matchup-edge module asks for several at
+// once, and flipping back to the tab shouldn't refetch).
+export function fetchHitterSplits(personId) {
+  return cached(`splits:${personId}`, 300000, async () => {
+    const data = await getJSON(`/people/${personId}/stats?stats=statSplits&sitCodes=vl,vr&season=${SEASON}&group=hitting`)
+    const out = { vl: null, vr: null }
+    ;(data.stats?.[0]?.splits || []).forEach((s) => {
+      if (s.split?.code === 'vl') out.vl = s.stat
+      if (s.split?.code === 'vr') out.vr = s.stat
+    })
+    return out
+  })
+}
+
 // One hitter's game-by-game log for the season (hot-or-not form chart).
 export async function fetchHitterGameLog(personId) {
   const data = await getJSON(`/people/${personId}/stats?stats=gameLog&season=${SEASON}&group=hitting`)

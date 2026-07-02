@@ -10,6 +10,7 @@ import TabBar from './components/TabBar.jsx'
 import BookmarkButton from './components/BookmarkButton.jsx'
 import BrewersBanner from './components/BrewersBanner.jsx'
 import GameHero from './components/GameHero.jsx'
+import MatchupEdge from './components/MatchupEdge.jsx'
 import Section from './components/Section.jsx'
 import Pulse from './components/Pulse.jsx'
 import Standings from './components/Standings.jsx'
@@ -116,6 +117,7 @@ export default function App() {
         {tab === 'season' && (
           <>
             <GameHero />
+            <MatchupEdge roster={roster} />
             <Section kicker="Season pulse" title="Where things stand"><Pulse standings={standings} lastGame={lastGame} ranks={ranks} error={errors.standings} /></Section>
             {milestones.length > 0 && <Section kicker="On the verge" title="Milestone watch"><MilestoneWatch items={milestones} /></Section>}
             <Section kicker="NL Central" title="The standings"><Standings standings={standings} schedules={schedules} error={errors.standings} /></Section>
