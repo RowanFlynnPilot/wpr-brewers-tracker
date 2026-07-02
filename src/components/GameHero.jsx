@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { theme } from '../theme.js'
 import { TEAM_ID, SPONSORS, SITE_URL } from '../config.js'
-import { fetchFeaturedGame, fetchLiveExtras } from '../api.js'
+import { fetchFeaturedGame, fetchLiveExtras, fetchSeasonFinals, fetchTeamContext } from '../api.js'
 import { fetchFirstPitchForecast } from '../weather.js'
 import { track } from '../analytics.js'
 import { useIsNarrow } from '../useIsNarrow.js'
@@ -78,6 +78,8 @@ export default function GameHero() {
   const [now, setNow] = useState(Date.now())
   const [extras, setExtras] = useState(null)
   const [forecast, setForecast] = useState(null)
+  const [seasonSeries, setSeasonSeries] = useState(null) // { w, l } vs the featured opponent
+  const [oppForm, setOppForm] = useState(null) // opponent record/streak/L10 (upcoming games)
   const [copied, setCopied] = useState(false) // share-button clipboard feedback
   const narrow = useIsNarrow()
 
@@ -146,6 +148,24 @@ export default function GameHero() {
     if (!game || gameState !== 'Preview' || game.teams.home.team.id !== TEAM_ID) return
     let alive = true
     fetchFirstPitchForecast(game.gameDate).then((f) => { if (alive) setForecast(f) }).catch(() => {})
+    return () => { alive = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- game object churns every poll; pk+state pin the fetch
+  }, [gamePk, gameState])
+
+  // Matchup context: the season series vs this opponent (from the cached season finals) and,
+  // for upcoming games, the opponent's current form (cached all-MLB standings). Both fail-soft.
+  useEffect(() => {
+    setSeasonSeries(null)
+    setOppForm(null)
+    if (!game) return
+    const oppTeamId = (game.teams.home.team.id === TEAM_ID ? game.teams.away : game.teams.home).team.id
+    let alive = true
+    fetchSeasonFinals().then((finals) => {
+      if (!alive) return
+      const vs = finals.filter((f) => f.oppId === oppTeamId)
+      setSeasonSeries({ w: vs.filter((f) => f.me > f.them).length, l: vs.filter((f) => f.me < f.them).length })
+    }).catch(() => {})
+    if (gameState === 'Preview') fetchTeamContext(oppTeamId).then((c) => { if (alive) setOppForm(c) }).catch(() => {})
     return () => { alive = false }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- game object churns every poll; pk+state pin the fetch
   }, [gamePk, gameState])
@@ -259,6 +279,25 @@ export default function GameHero() {
         )}
         <TeamBlock team={opp} name={oppName} />
       </div>
+
+      {/* Matchup context: opponent form (upcoming) + season series. Live hero stays lean. */}
+      {!live && (() => {
+        const oppShort = opp.team.teamName || oppName
+        const s = seasonSeries
+        const seriesText = s && (s.w + s.l > 0)
+          ? s.w === s.l ? `Season series tied ${s.w}–${s.l}` : `Brewers ${s.w > s.l ? 'lead' : 'trail'} the season series ${s.w}–${s.l}`
+          : null
+        const oppText = oppForm
+          ? `The ${oppShort} come in ${oppForm.wins}–${oppForm.losses}${oppForm.divRank ? ` · ${ord(Number(oppForm.divRank))} in their division` : ''}${oppForm.streak ? ` · ${oppForm.streak}` : ''}${oppForm.l10 ? ` · ${oppForm.l10.wins}–${oppForm.l10.losses} last 10` : ''}`
+          : null
+        if (!seriesText && !oppText) return null
+        return (
+          <div style={{ fontFamily: theme.sans, fontSize: 12.5, color: theme.muted, margin: '-6px 0 18px', lineHeight: 1.7 }}>
+            {oppText && <div>{oppText}</div>}
+            {seriesText && <div style={{ color: theme.navy, fontWeight: 700 }}>{seriesText}</div>}
+          </div>
+        )
+      })()}
 
       {/* Half-inning, right under the score (▲ top / ▼ bottom) */}
       {live && halfLabel && (

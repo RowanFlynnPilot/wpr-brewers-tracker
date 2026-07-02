@@ -266,6 +266,7 @@ export function fetchSeasonFinals() {
           gamePk: g.gamePk,
           date: g.officialDate || g.gameDate.slice(0, 10),
           home,
+          oppId: opp.id,
           oppName: opp.teamName || opp.name.replace('Milwaukee ', ''),
           me: g.teams[home ? 'home' : 'away'].score,
           them: g.teams[home ? 'away' : 'home'].score,
@@ -273,6 +274,26 @@ export function fetchSeasonFinals() {
       })
     return games.reverse()
   })
+}
+
+// One opposing team's current form (record, streak, last 10, division rank) for the hero's
+// scouting line. Fetches BOTH leagues' standings once (cached — any opponent resolves from the
+// same map) and looks the team up.
+export function fetchTeamContext(teamId) {
+  return cached('mlbStandings', 120000, async () => {
+    const data = await getJSON(`/standings?leagueId=103,104&season=${SEASON}`)
+    const map = {}
+    data.records.forEach((r) => r.teamRecords.forEach((t) => {
+      map[t.team.id] = {
+        wins: t.wins,
+        losses: t.losses,
+        streak: t.streak?.streakCode || null,
+        divRank: t.divisionRank || null,
+        l10: (t.records?.splitRecords || []).find((s) => s.type === 'lastTen') || null,
+      }
+    }))
+    return map
+  }).then((m) => m[teamId] || null)
 }
 
 // Raw play-by-play for one game — cached (a completed game's play-by-play is static, and the
