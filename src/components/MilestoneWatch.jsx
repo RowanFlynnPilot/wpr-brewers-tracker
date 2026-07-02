@@ -25,7 +25,7 @@ export function milestoneWatch(roster, leaders = null) {
     const need = next - value
     if (need > 0 && need <= maxNeed) {
       const u = plural && need !== 1 ? `${unit}s` : unit
-      items.push({ id, name, need, text: `needs ${need} ${u} for ${next}`, detail, note: note(cat, id) })
+      items.push({ id, name, need, value, next, text: `needs ${need} ${u} for ${next}`, detail, note: note(cat, id) })
     }
   }
   roster.forEach((p) => {
@@ -60,20 +60,31 @@ export function milestoneWatch(roster, leaders = null) {
 }
 
 // "On the verge" cards — a daily-changing hook of players nearing milestones, each with a
-// production detail line and (when available) a league-context note.
+// production detail line, a progress bar toward the round number, and (when available) a
+// league-context note. With exactly 4 cards the min width rises so desktop lays out 2×2
+// instead of 3 + 1 orphan.
 export default function MilestoneWatch({ items }) {
+  const min = items.length === 4 ? 300 : 260
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(${min}px, 1fr))`, gap: 12 }}>
       {items.map((it) => (
         <div key={it.id} style={{ display: 'flex', alignItems: 'center', gap: 11, border: `1px solid ${theme.rule}`, borderLeft: `3px solid ${theme.gold}`, borderRadius: 6, padding: '11px 13px', background: theme.wash }}>
           <img src={headshot(it.id)} alt="" width={40} height={40} style={{ borderRadius: '50%', objectFit: 'cover', background: '#fff', flexShrink: 0 }} onError={(e) => { e.currentTarget.style.visibility = 'hidden' }} />
-          <div style={{ minWidth: 0 }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
             <div style={{ fontFamily: theme.serif, fontSize: 15, fontWeight: 700, color: theme.ink, lineHeight: 1.15 }}>{it.name}</div>
             <div style={{ fontFamily: theme.sans, fontSize: 12, color: theme.muted, marginTop: 1 }}>{it.text}</div>
             {it.detail && (
               <div style={{ fontFamily: theme.sans, fontSize: 11.5, marginTop: 3, lineHeight: 1.35 }}>
                 <span style={{ color: theme.ink }}>{it.detail}</span>
                 {it.note && <span style={{ color: theme.navy, fontWeight: 700 }}> · {it.note}</span>}
+              </div>
+            )}
+            {it.next > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 6 }}>
+                <div style={{ flex: 1, height: 4, borderRadius: 2, background: theme.rule, overflow: 'hidden' }}>
+                  <div style={{ width: `${Math.min(100, (it.value / it.next) * 100)}%`, height: '100%', background: theme.gold }} />
+                </div>
+                <span style={{ fontFamily: theme.sans, fontSize: 10, fontWeight: 700, color: theme.muted, whiteSpace: 'nowrap' }}>{it.value}/{it.next}</span>
               </div>
             )}
           </div>
