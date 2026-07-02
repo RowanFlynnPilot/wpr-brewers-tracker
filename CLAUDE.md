@@ -56,9 +56,10 @@ MLB Stats API (statsapi.mlb.com) → fetch() in browser → React/Vite → GitHu
   the destination (http/https only — shared `src/embed.js` `destination()`). Clicks fire a
   `Mini Click` event tagged with `widget`. Keep them tiny — no service worker, no recharts.
 - Sections are grouped into tabs in `App.jsx` (`TABS` + `TabBar.jsx`): Season (hero + platoon edge +
-  pulse + milestones + standings + race), Schedule (schedule + injuries + roster moves + coverage +
-  sponsor band + this-day), Hitters (leaders + HR + spray + form), Pitching (leaders + bullpen check +
-  strikeout + arsenal + game flow). Only the active tab renders, so a
+  pulse + milestones + standings/vs-Central + race + playoff odds + road ahead), Schedule (schedule +
+  homestand + injuries + roster moves + coverage + sponsor band + this-day), Hitters (leaders + HR +
+  spray + form), Pitching (leaders + bullpen check + strikeout + arsenal + game flow). Only the
+  active tab renders, so a
   tab's heavy season-wide fetches fire only when opened — and `api.js` memoizes those scans
   (`cached()`, short TTL) so flipping back to a tab is instant, not a refetch. Masthead, banner +
   title sponsor, the updated stamp, and the footer stay pinned across all tabs. Tab switches fire a
@@ -76,10 +77,15 @@ MLB Stats API (statsapi.mlb.com) → fetch() in browser → React/Vite → GitHu
   - `Race`, `Schedule`, `Players` — self-contained, fetch their own feed. `Race` draws direct
     end-of-line labels (logo + GB) instead of a legend; `Players` takes the shared league-leaders
     map (`mlbLeaders`) and chips MLB top-5 ranks under names.
-  - `MatchupEdge`, `InjuryReport`, `RosterMoves`, `BullpenCheck`, `Coverage`, `ThisDay` —
-    fail-soft sections that OWN their `Section` chrome: on error/empty the heading disappears
-    with the content (never render an orphaned title over blank space — follow this pattern for
-    any new fail-soft section).
+  - `MatchupEdge`, `InjuryReport`, `RosterMoves`, `BullpenCheck`, `PlayoffOdds`, `RoadAhead`,
+    `HomestandGuide`, `Coverage`, `ThisDay` — fail-soft sections that OWN their `Section` chrome:
+    on error/empty the heading disappears with the content (never render an orphaned title over
+    blank space — follow this pattern for any new fail-soft section).
+  - `PlayerCard` — tap-any-player modal. One `<PlayerCardHost/>` mounts in App; any surface calls
+    the exported `openPlayerCard(id)` (module-level hook, no prop threading). Card data is one
+    cached bundle (`fetchPlayerCard`): bio + season line + last-5 log + hitter L/R splits.
+  - `PlayoffOdds` runs a 4,000-sim rest-of-season Monte Carlo IN THE BROWSER (regressed win%,
+    normal-approx binomial) — a deliberate house model, labeled as such; not a data cron.
   - `Status` — `Loading` + `ErrorState`.
 
 ## Data notes (verified against the 2026 season)

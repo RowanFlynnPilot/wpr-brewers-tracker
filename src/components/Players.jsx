@@ -1,6 +1,7 @@
 import { theme } from '../theme.js'
 import { headshot } from '../config.js'
 import { Loading, ErrorState } from './Status.jsx'
+import { openPlayerCard } from './PlayerCard.jsx'
 
 const th = { fontFamily: theme.sans, fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', color: theme.muted, textAlign: 'right', padding: '6px 8px', fontWeight: 700 }
 const td = { fontFamily: theme.sans, fontSize: 13, color: theme.ink, textAlign: 'right', padding: '8px', borderTop: `1px solid ${theme.rule}` }
@@ -25,7 +26,8 @@ function bestRankNote(mlbLeaders, id) {
 // "Player to watch" — the OPS leader and the ERA leader, surfaced as a spotlight above the tables.
 function Spotlight({ hitter, pitcher }) {
   const Item = ({ p, role, line }) => !p ? null : (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: '1 1 240px' }}>
+    <div role="button" tabIndex={0} onClick={() => openPlayerCard(p.id)} onKeyDown={(e) => e.key === 'Enter' && openPlayerCard(p.id)}
+      style={{ display: 'flex', alignItems: 'center', gap: 12, flex: '1 1 240px', cursor: 'pointer' }}>
       <img src={headshot(p.id)} alt="" width={54} height={54} style={{ borderRadius: '50%', background: theme.wash, objectFit: 'cover', flexShrink: 0 }} onError={(e) => { e.currentTarget.style.visibility = 'hidden' }} />
       <div style={{ minWidth: 0 }}>
         <div style={{ fontFamily: theme.sans, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: theme.gold, fontWeight: 700 }}>{role}</div>
@@ -57,7 +59,7 @@ function LeaderTable({ title, rows, columns, mlbLeaders }) {
           {rows.map((r) => {
             const note = bestRankNote(mlbLeaders, r.id)
             return (
-              <tr key={r.id} className="hover-row">
+              <tr key={r.id} className="hover-row" onClick={() => openPlayerCard(r.id)} style={{ cursor: 'pointer' }}>
                 <td style={{ ...td, textAlign: 'left' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <img src={headshot(r.id)} alt="" width={28} height={28} style={{ borderRadius: '50%', background: theme.wash, objectFit: 'cover' }} onError={(e) => { e.currentTarget.style.visibility = 'hidden' }} />

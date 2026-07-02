@@ -431,6 +431,25 @@ export function fetchHitterSplits(personId) {
   })
 }
 
+// Everything the player tap-card needs, one cached bundle per player: bio + season line, the
+// last few game logs, and (for hitters) the L/R splits. Group picked from the primary position.
+export function fetchPlayerCard(personId) {
+  return cached(`card:${personId}`, 300000, async () => {
+    const data = await getJSON(`/people/${personId}?hydrate=stats(group=[hitting,pitching],type=season)`)
+    const person = data.people?.[0]
+    if (!person) throw new Error('player not found')
+    const isPitcher = person.primaryPosition?.abbreviation === 'P'
+    const group = isPitcher ? 'pitching' : 'hitting'
+    const season = (person.stats || []).find((s) => s.group?.displayName === group)?.splits?.[0]?.stat || null
+    const [logData, splits] = await Promise.all([
+      getJSON(`/people/${personId}/stats?stats=gameLog&season=${SEASON}&group=${group}`).catch(() => null),
+      isPitcher ? Promise.resolve(null) : fetchHitterSplits(personId).catch(() => null),
+    ])
+    const log = (logData?.stats?.[0]?.splits || []).slice(-5).reverse()
+    return { person, isPitcher, season, log, splits }
+  })
+}
+
 // One hitter's game-by-game log for the season (hot-or-not form chart).
 export async function fetchHitterGameLog(personId) {
   const data = await getJSON(`/people/${personId}/stats?stats=gameLog&season=${SEASON}&group=hitting`)
@@ -452,6 +471,24 @@ export function fetchRemainingSchedules() {
       }))
       return { id: Number(id), opps }
     }))
+  })
+}
+
+// The next homestand: the upcoming run of consecutive HOME games (cut at the first road game),
+// with the promotions hydrate (giveaways / theme nights — verified present on this endpoint).
+export function fetchNextHomestand() {
+  return cached('homestand', 300000, async () => {
+    const t = new Date()
+    const fwd = new Date(t); fwd.setDate(t.getDate() + 21)
+    const data = await getJSON(`/schedule?sportId=1&teamId=${TEAM_ID}&startDate=${today()}&endDate=${localDate(fwd)}&hydrate=game(promotions),team`)
+    const upcoming = (data.dates || []).flatMap((d) => d.games)
+      .filter((g) => g.status.abstractGameState === 'Preview' && g.gameType === 'R')
+    const stand = []
+    for (const g of upcoming) {
+      if (g.teams.home.team.id === TEAM_ID) stand.push(g)
+      else if (stand.length) break // homestand over at the first road game after it began
+    }
+    return stand
   })
 }
 

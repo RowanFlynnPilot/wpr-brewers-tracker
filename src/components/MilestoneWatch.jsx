@@ -1,5 +1,6 @@
 import { theme } from '../theme.js'
 import { headshot } from '../config.js'
+import { openPlayerCard } from './PlayerCard.jsx'
 
 const ord = (n) => { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]) }
 const CAT_LABEL = { homeRuns: 'home runs', runsBattedIn: 'RBI', hits: 'hits', stolenBases: 'steals', wins: 'wins', strikeouts: 'strikeouts', saves: 'saves' }
@@ -68,7 +69,8 @@ export default function MilestoneWatch({ items }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(${min}px, 1fr))`, gap: 12 }}>
       {items.map((it) => (
-        <div key={it.id} style={{ display: 'flex', alignItems: 'center', gap: 11, border: `1px solid ${theme.rule}`, borderLeft: `3px solid ${theme.gold}`, borderRadius: 6, padding: '11px 13px', background: theme.wash }}>
+        <div key={it.id} role="button" tabIndex={0} onClick={() => openPlayerCard(it.id)} onKeyDown={(e) => e.key === 'Enter' && openPlayerCard(it.id)} className="card-hover"
+          style={{ display: 'flex', alignItems: 'center', gap: 11, border: `1px solid ${theme.rule}`, borderLeft: `3px solid ${theme.gold}`, borderRadius: 6, padding: '11px 13px', background: theme.wash, cursor: 'pointer' }}>
           <img src={headshot(it.id)} alt="" width={40} height={40} style={{ borderRadius: '50%', objectFit: 'cover', background: '#fff', flexShrink: 0 }} onError={(e) => { e.currentTarget.style.visibility = 'hidden' }} />
           <div style={{ minWidth: 0, flex: 1 }}>
             <div style={{ fontFamily: theme.serif, fontSize: 15, fontWeight: 700, color: theme.ink, lineHeight: 1.15 }}>{it.name}</div>

@@ -3,6 +3,7 @@ import { theme } from '../theme.js'
 import { TEAM_ID, headshot } from '../config.js'
 import { fetchFeaturedGame, fetchPitcherHand, fetchHitterSplits } from '../api.js'
 import Section from './Section.jsx'
+import { openPlayerCard } from './PlayerCard.jsx'
 
 // "The platoon edge" — ahead of an upcoming game, which Brewers bats hit the opposing probable's
 // side best this season. Needs the probable's throwing hand (one people call) + season L/R splits
@@ -72,7 +73,8 @@ export default function MatchupEdge({ roster }) {
       </p>
       <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(${rows.length === 4 ? 300 : 250}px, 1fr))`, gap: 10 }}>
         {rows.map((r, i) => (
-          <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 11, border: `1px solid ${theme.rule}`, borderLeft: `3px solid ${i === 0 ? theme.gold : theme.rule}`, borderRadius: 6, padding: '10px 13px', background: i === 0 ? theme.wash : '#fff' }}>
+          <div key={r.id} role="button" tabIndex={0} onClick={() => openPlayerCard(r.id)} onKeyDown={(e) => e.key === 'Enter' && openPlayerCard(r.id)} className="card-hover"
+            style={{ display: 'flex', alignItems: 'center', gap: 11, border: `1px solid ${theme.rule}`, borderLeft: `3px solid ${i === 0 ? theme.gold : theme.rule}`, borderRadius: 6, padding: '10px 13px', background: i === 0 ? theme.wash : '#fff', cursor: 'pointer' }}>
             <img src={headshot(r.id)} alt="" width={38} height={38} style={{ borderRadius: '50%', objectFit: 'cover', background: theme.wash, flexShrink: 0 }} onError={(e) => { e.currentTarget.style.visibility = 'hidden' }} />
             <div style={{ minWidth: 0 }}>
               <div style={{ fontFamily: theme.serif, fontSize: 14.5, fontWeight: i === 0 ? 700 : 400, color: theme.ink, lineHeight: 1.15 }}>{r.name}</div>

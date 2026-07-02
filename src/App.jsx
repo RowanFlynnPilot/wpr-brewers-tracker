@@ -25,6 +25,7 @@ import VsCentral from './components/VsCentral.jsx'
 import SponsorBand from './components/SponsorBand.jsx'
 import Coverage from './components/Coverage.jsx'
 import InjuryReport from './components/InjuryReport.jsx'
+import HomestandGuide from './components/HomestandGuide.jsx'
 import RosterMoves from './components/RosterMoves.jsx'
 import BullpenCheck from './components/BullpenCheck.jsx'
 import Strikeouts from './components/Strikeouts.jsx'
@@ -33,6 +34,7 @@ import Arsenal from './components/Arsenal.jsx'
 import GameFlow from './components/GameFlow.jsx'
 import HotHitter from './components/HotHitter.jsx'
 import Spray from './components/Spray.jsx'
+import PlayerCardHost from './components/PlayerCard.jsx'
 import { Loading } from './components/Status.jsx'
 
 // Recharts is the heaviest dependency — load the race chart in its own chunk.
@@ -136,6 +138,7 @@ export default function App() {
         {tab === 'schedule' && (
           <>
             <Section kicker="Recent & upcoming" title="The schedule"><Schedule /></Section>
+            <HomestandGuide />
             <InjuryReport />
             <RosterMoves />
             {WPR_NEWS && <Coverage />}
@@ -164,6 +167,7 @@ export default function App() {
           </>
         )}
 
+        <PlayerCardHost />
         <footer style={{ borderTop: `1px solid ${theme.rule}`, padding: '22px 0 44px', fontFamily: theme.sans, fontSize: 11, color: theme.muted, lineHeight: 1.6 }}>
           Data via the MLB Stats API · refreshes live. Not affiliated with or endorsed by Major League Baseball or the Milwaukee Brewers.<br />
           {SPONSOR_DISCLAIMER && <>{SPONSOR_DISCLAIMER}<br /></>}

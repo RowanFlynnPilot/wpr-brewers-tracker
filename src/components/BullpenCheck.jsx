@@ -3,6 +3,7 @@ import { theme } from '../theme.js'
 import { TEAM_ID, headshot } from '../config.js'
 import { fetchSeasonFinals, fetchFinalBoxscore } from '../api.js'
 import Section from './Section.jsx'
+import { openPlayerCard } from './PlayerCard.jsx'
 
 // "Who's fresh tonight" — bullpen workload from the last two games' box scores. Each active
 // reliever is tagged fresh / worked last game / back-to-back, with pitch counts. Game-based, not
@@ -71,7 +72,8 @@ export default function BullpenCheck({ roster }) {
     <Section kicker="The bullpen" title="Who's fresh tonight">
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 10 }}>
         {pen.map((r) => (
-          <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 11, border: `1px solid ${theme.rule}`, borderRadius: 6, padding: '9px 12px', background: r.status === 'fresh' ? '#fff' : theme.wash }}>
+          <div key={r.id} role="button" tabIndex={0} onClick={() => openPlayerCard(r.id)} onKeyDown={(e) => e.key === 'Enter' && openPlayerCard(r.id)} className="card-hover"
+            style={{ display: 'flex', alignItems: 'center', gap: 11, border: `1px solid ${theme.rule}`, borderRadius: 6, padding: '9px 12px', background: r.status === 'fresh' ? '#fff' : theme.wash, cursor: 'pointer' }}>
             <img src={headshot(r.id)} alt="" width={34} height={34} style={{ borderRadius: '50%', objectFit: 'cover', background: theme.wash, flexShrink: 0 }} onError={(e) => { e.currentTarget.style.visibility = 'hidden' }} />
             <div style={{ minWidth: 0, flex: 1 }}>
               <div style={{ fontFamily: theme.serif, fontSize: 14.5, color: theme.ink, lineHeight: 1.15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}</div>
