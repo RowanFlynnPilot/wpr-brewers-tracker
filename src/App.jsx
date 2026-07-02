@@ -20,6 +20,8 @@ import WhereToWatch from './components/WhereToWatch.jsx'
 import MilestoneWatch, { milestoneWatch } from './components/MilestoneWatch.jsx'
 import SponsorBand from './components/SponsorBand.jsx'
 import Coverage from './components/Coverage.jsx'
+import InjuryReport from './components/InjuryReport.jsx'
+import RosterMoves from './components/RosterMoves.jsx'
 import Strikeouts from './components/Strikeouts.jsx'
 import HomeRuns from './components/HomeRuns.jsx'
 import Arsenal from './components/Arsenal.jsx'
@@ -126,6 +128,8 @@ export default function App() {
         {tab === 'schedule' && (
           <>
             <Section kicker="Recent & upcoming" title="The schedule"><Schedule /></Section>
+            <InjuryReport />
+            <RosterMoves />
             {WPR_NEWS && <Coverage />}
             <SponsorBand />
             {WATCH_PARTY && <Section kicker="Where to watch" title="Catch the games this week"><WhereToWatch venue={WATCH_PARTY} /></Section>}

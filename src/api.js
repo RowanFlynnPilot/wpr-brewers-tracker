@@ -404,6 +404,37 @@ export async function fetchHitterGameLog(personId) {
   return data.stats?.[0]?.splits || []
 }
 
+// Brewers currently on an injured list, from the 40-man roster's status codes (D10/D15/D60).
+// Sorted soonest-back first (10-day before 60-day). One small call, fail-soft at the component.
+export async function fetchInjuries() {
+  const data = await getJSON(`/teams/${TEAM_ID}/roster?rosterType=40Man`)
+  const tier = (code) => Number(code.slice(1)) || 99
+  return (data.roster || [])
+    .filter((r) => (r.status?.code || '').startsWith('D'))
+    .map((r) => ({
+      id: r.person.id,
+      name: r.person.fullName,
+      pos: r.position?.abbreviation || '',
+      code: r.status.code,
+      label: /^D\d+$/.test(r.status.code) ? `${r.status.code.slice(1)}-day IL` : (r.status.description || r.status.code),
+    }))
+    .sort((a, b) => tier(a.code) - tier(b.code) || a.name.localeCompare(b.name))
+}
+
+// Brewers roster moves over a recent window, from the transactions endpoint — readable
+// one-liners ("activated RHP Brandon Woodruff from the 15-day injured list"), newest first.
+export async function fetchTransactions(days = 14) {
+  const t = new Date()
+  const back = new Date(t); back.setDate(t.getDate() - days)
+  const data = await getJSON(`/transactions?teamId=${TEAM_ID}&startDate=${localDate(back)}&endDate=${localDate(t)}`)
+  const seen = new Set() // the wire occasionally carries the same move twice under different ids
+  return (data.transactions || [])
+    .filter((x) => x.description)
+    .filter((x) => { const k = `${x.date}|${x.description}`; return seen.has(k) ? false : seen.add(k) })
+    .map((x) => ({ id: x.id, date: x.date, type: x.typeDesc || '', text: x.description, personId: x.person?.id || null }))
+    .reverse()
+}
+
 // Active roster with season stats hydrated in a single call.
 export async function fetchRosterStats() {
   const data = await getJSON(`/teams/${TEAM_ID}/roster?rosterType=active&hydrate=person(stats(type=season,season=${SEASON}))`)
