@@ -23,6 +23,7 @@ import SponsorBand from './components/SponsorBand.jsx'
 import Coverage from './components/Coverage.jsx'
 import InjuryReport from './components/InjuryReport.jsx'
 import RosterMoves from './components/RosterMoves.jsx'
+import BullpenCheck from './components/BullpenCheck.jsx'
 import Strikeouts from './components/Strikeouts.jsx'
 import HomeRuns from './components/HomeRuns.jsx'
 import Arsenal from './components/Arsenal.jsx'
@@ -151,6 +152,7 @@ export default function App() {
         {tab === 'pitching' && (
           <>
             <Section kicker="The staff" title="Pitching leaders"><Players roster={roster} error={errors.roster} group="pitching" mlbLeaders={leaders} /></Section>
+            <BullpenCheck roster={roster} />
             <Section kicker="Pitch by pitch" title="Strikeout tracker"><Strikeouts /></Section>
             <Section kicker="On the mound" title="Pitch arsenal"><Arsenal /></Section>
             <Section kicker="How it unfolded" title="Game flow"><GameFlow /></Section>

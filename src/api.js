@@ -182,6 +182,12 @@ export async function fetchBoxscore(gamePk) {
   return getJSON(`/game/${gamePk}/boxscore`)
 }
 
+// Box score for a COMPLETED game, cached (static once final) — the bullpen check reads the last
+// couple of games and shouldn't refetch on tab flips. Live callers keep using fetchBoxscore.
+export function fetchFinalBoxscore(gamePk) {
+  return cached(`finalBox:${gamePk}`, 600000, () => fetchBoxscore(gamePk))
+}
+
 // Full box score for one game: player batting/pitching lines + the inning-by-inning linescore.
 // Fetched on demand when a schedule card is opened.
 export async function fetchGameBox(gamePk) {
