@@ -19,6 +19,9 @@ import Players from './components/Players.jsx'
 import ThisDay from './components/ThisDay.jsx'
 import WhereToWatch from './components/WhereToWatch.jsx'
 import MilestoneWatch, { milestoneWatch } from './components/MilestoneWatch.jsx'
+import PlayoffOdds from './components/PlayoffOdds.jsx'
+import RoadAhead from './components/RoadAhead.jsx'
+import VsCentral from './components/VsCentral.jsx'
 import SponsorBand from './components/SponsorBand.jsx'
 import Coverage from './components/Coverage.jsx'
 import InjuryReport from './components/InjuryReport.jsx'
@@ -121,10 +124,12 @@ export default function App() {
             <MatchupEdge roster={roster} />
             <Section kicker="Season pulse" title="Where things stand"><Pulse standings={standings} lastGame={lastGame} ranks={ranks} error={errors.standings} /></Section>
             {milestones.length > 0 && <Section kicker="On the verge" title="Milestone watch"><MilestoneWatch items={milestones} /></Section>}
-            <Section kicker="NL Central" title="The standings"><Standings standings={standings} schedules={schedules} error={errors.standings} /></Section>
+            <Section kicker="NL Central" title="The standings"><Standings standings={standings} schedules={schedules} error={errors.standings} /><VsCentral /></Section>
             <Section kicker="The division race" title="NL Central, day by day">
               <Suspense fallback={<Loading block />}><Race schedules={schedules} error={errors.schedules} /></Suspense>
             </Section>
+            <PlayoffOdds />
+            <RoadAhead />
           </>
         )}
 

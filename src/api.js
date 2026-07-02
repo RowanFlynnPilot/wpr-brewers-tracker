@@ -282,24 +282,31 @@ export function fetchSeasonFinals() {
   })
 }
 
-// One opposing team's current form (record, streak, last 10, division rank) for the hero's
-// scouting line. Fetches BOTH leagues' standings once (cached — any opponent resolves from the
-// same map) and looks the team up.
-export function fetchTeamContext(teamId) {
+// Every MLB team's current record, keyed by team id — BOTH leagues' standings in one cached
+// call. Feeds the hero's opponent-scouting line, the playoff-odds simulation, and the
+// road-ahead strength-of-schedule math.
+export function fetchLeagueTable() {
   return cached('mlbStandings', 120000, async () => {
     const data = await getJSON(`/standings?leagueId=103,104&season=${SEASON}`)
     const map = {}
     data.records.forEach((r) => r.teamRecords.forEach((t) => {
       map[t.team.id] = {
+        name: t.team.name,
         wins: t.wins,
         losses: t.losses,
+        divId: r.division?.id || null,
         streak: t.streak?.streakCode || null,
         divRank: t.divisionRank || null,
         l10: (t.records?.splitRecords || []).find((s) => s.type === 'lastTen') || null,
       }
     }))
     return map
-  }).then((m) => m[teamId] || null)
+  })
+}
+
+// One opposing team's current form (record, streak, last 10, division rank) for the hero.
+export function fetchTeamContext(teamId) {
+  return fetchLeagueTable().then((m) => m[teamId] || null)
 }
 
 // Raw play-by-play for one game — cached (a completed game's play-by-play is static, and the
@@ -428,6 +435,24 @@ export function fetchHitterSplits(personId) {
 export async function fetchHitterGameLog(personId) {
   const data = await getJSON(`/people/${personId}/stats?stats=gameLog&season=${SEASON}&group=hitting`)
   return data.stats?.[0]?.splits || []
+}
+
+// Remaining (unplayed) opponents for every division team — one future-window schedule call per
+// team, cached as a bundle. The road-ahead module weighs these against the league table.
+export function fetchRemainingSchedules() {
+  return cached('remaining', 300000, async () => {
+    const ids = Object.keys(DIVISION)
+    return Promise.all(ids.map(async (id) => {
+      const data = await getJSON(`/schedule?sportId=1&teamId=${id}&startDate=${today()}&endDate=${SEASON}-10-05`)
+      const opps = []
+      ;(data.dates || []).forEach((d) => d.games.forEach((g) => {
+        if (g.status?.abstractGameState === 'Final' || g.gameType !== 'R') return
+        const home = g.teams.home.team.id === Number(id)
+        opps.push((home ? g.teams.away : g.teams.home).team.id)
+      }))
+      return { id: Number(id), opps }
+    }))
+  })
 }
 
 // Brewers currently on an injured list, from the 40-man roster's status codes (D10/D15/D60).
