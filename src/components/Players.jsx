@@ -5,6 +5,23 @@ import { Loading, ErrorState } from './Status.jsx'
 const th = { fontFamily: theme.sans, fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', color: theme.muted, textAlign: 'right', padding: '6px 8px', fontWeight: 700 }
 const td = { fontFamily: theme.sans, fontSize: 13, color: theme.ink, textAlign: 'right', padding: '8px', borderTop: `1px solid ${theme.rule}` }
 
+// League-context chip for a leader row: the player's best top-5 MLB rank across the categories
+// already pulled for Milestone Watch (shared fetchLeagueLeaders — no extra API call).
+const ord = (n) => { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]) }
+const CAT_SHORT = { homeRuns: 'HR', runsBattedIn: 'RBI', hits: 'hits', stolenBases: 'SB', wins: 'wins', strikeouts: 'K', saves: 'saves' }
+function bestRankNote(mlbLeaders, id) {
+  if (!mlbLeaders) return null
+  let best = null
+  Object.entries(mlbLeaders).forEach(([cat, byId]) => {
+    const e = byId[id]
+    if (e && e.rank <= 5 && (!best || e.rank < best.rank)) best = { ...e, cat }
+  })
+  if (!best) return null
+  const label = CAT_SHORT[best.cat]
+  if (best.rank === 1) return best.tied ? `T-1st in MLB · ${label}` : `Leads MLB · ${label}`
+  return `${ord(best.rank)} in MLB · ${label}`
+}
+
 // "Player to watch" — the OPS leader and the ERA leader, surfaced as a spotlight above the tables.
 function Spotlight({ hitter, pitcher }) {
   const Item = ({ p, role, line }) => !p ? null : (
@@ -25,7 +42,7 @@ function Spotlight({ hitter, pitcher }) {
   )
 }
 
-function LeaderTable({ title, rows, columns }) {
+function LeaderTable({ title, rows, columns, mlbLeaders }) {
   return (
     <div>
       <div style={{ fontFamily: theme.sans, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: theme.gold, marginBottom: 10, fontWeight: 700 }}>{title}</div>
@@ -37,17 +54,23 @@ function LeaderTable({ title, rows, columns }) {
           </tr>
         </thead>
         <tbody>
-          {rows.map((r) => (
-            <tr key={r.id} className="hover-row">
-              <td style={{ ...td, textAlign: 'left' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <img src={headshot(r.id)} alt="" width={28} height={28} style={{ borderRadius: '50%', background: theme.wash, objectFit: 'cover' }} onError={(e) => { e.currentTarget.style.visibility = 'hidden' }} />
-                  <span style={{ fontFamily: theme.serif, fontSize: 15 }}>{r.name}</span>
-                </div>
-              </td>
-              {columns.map((c) => <td key={c.key} style={td}>{r[c.key]}</td>)}
-            </tr>
-          ))}
+          {rows.map((r) => {
+            const note = bestRankNote(mlbLeaders, r.id)
+            return (
+              <tr key={r.id} className="hover-row">
+                <td style={{ ...td, textAlign: 'left' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <img src={headshot(r.id)} alt="" width={28} height={28} style={{ borderRadius: '50%', background: theme.wash, objectFit: 'cover' }} onError={(e) => { e.currentTarget.style.visibility = 'hidden' }} />
+                    <span style={{ minWidth: 0 }}>
+                      <span style={{ fontFamily: theme.serif, fontSize: 15 }}>{r.name}</span>
+                      {note && <span style={{ display: 'block', fontFamily: theme.sans, fontSize: 10, fontWeight: 700, letterSpacing: '0.04em', color: theme.gold, marginTop: 1, whiteSpace: 'nowrap' }}>{note}</span>}
+                    </span>
+                  </div>
+                </td>
+                {columns.map((c) => <td key={c.key} style={td}>{r[c.key]}</td>)}
+              </tr>
+            )
+          })}
         </tbody>
       </table>
     </div>
@@ -78,7 +101,8 @@ function buildLeaders(roster) {
 
 // `group` selects which side to show: 'hitting' (batting spotlight + table), 'pitching'
 // (pitching spotlight + table), or undefined for both. Lets the leaders live in their tab.
-export default function Players({ roster, error, group }) {
+// `mlbLeaders` is the shared fetchLeagueLeaders map — rows in the MLB top 5 get a rank chip.
+export default function Players({ roster, error, group, mlbLeaders }) {
   if (!roster) return error ? <ErrorState /> : <Loading />
   const leaders = buildLeaders(roster)
   const showHit = group !== 'pitching'
@@ -88,8 +112,8 @@ export default function Players({ roster, error, group }) {
     <div>
       <Spotlight hitter={showHit ? leaders.hitters[0] : null} pitcher={showPit ? leaders.pitchers[0] : null} />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 36 }}>
-        {showHit && <LeaderTable title="Batting leaders · by OPS" rows={leaders.hitters} columns={[{ key: 'avg', label: 'AVG' }, { key: 'hr', label: 'HR' }, { key: 'rbi', label: 'RBI' }, { key: 'ops', label: 'OPS' }]} />}
-        {showPit && <LeaderTable title="Pitching leaders · by ERA" rows={leaders.pitchers} columns={[{ key: 'era', label: 'ERA' }, { key: 'w', label: 'W' }, { key: 'so', label: 'SO' }, { key: 'sv', label: 'SV' }]} />}
+        {showHit && <LeaderTable title="Batting leaders · by OPS" rows={leaders.hitters} mlbLeaders={mlbLeaders} columns={[{ key: 'avg', label: 'AVG' }, { key: 'hr', label: 'HR' }, { key: 'rbi', label: 'RBI' }, { key: 'ops', label: 'OPS' }]} />}
+        {showPit && <LeaderTable title="Pitching leaders · by ERA" rows={leaders.pitchers} mlbLeaders={mlbLeaders} columns={[{ key: 'era', label: 'ERA' }, { key: 'w', label: 'W' }, { key: 'so', label: 'SO' }, { key: 'sv', label: 'SV' }]} />}
       </div>
     </div>
   )
