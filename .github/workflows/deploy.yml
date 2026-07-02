@@ -57,8 +57,9 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      # NOTE: deploy-pages hard-caps its queue wait at 10 minutes (larger `timeout` values are
+      # clamped with a warning). If the Pages queue stalls (seen 2026-07-02), the only fix is
+      # re-running the deploy job until GitHub's queue clears — the twice-daily schedule also
+      # self-heals it on the next tick.
       - id: deployment
         uses: actions/deploy-pages@v4
-        with:
-          # Ride out Pages queue congestion (default gives up at 10 min; seen 2026-07-02).
-          timeout: 1800000
