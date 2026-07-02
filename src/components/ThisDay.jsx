@@ -3,10 +3,12 @@ import { theme } from '../theme.js'
 import { fetchThisDayGames, fetchDecisivePlay } from '../api.js'
 import { rankThisDay, winningHitSentence } from '../games.js'
 import { Loading } from './Status.jsx'
+import Section from './Section.jsx'
 
 // "This day in Brewers history" — a single highlight: the most fun game the Brewers played on
-// today's date across past seasons (1970 on), with the go-ahead hit. Self-contained and fail-soft;
-// the per-season fan-out only fires once the section nears the viewport.
+// today's date across past seasons (1970 on), with the go-ahead hit. Self-contained and fail-soft:
+// it owns its Section chrome, so a failed fan-out hides the heading too (no orphaned title). The
+// per-season fan-out only fires once the section nears the viewport.
 export default function ThisDay() {
   const ref = useRef(null)
   const [armed, setArmed] = useState(false)
@@ -47,17 +49,19 @@ export default function ThisDay() {
     return () => { alive = false }
   }, [items])
 
+  const wrap = (children) => <Section kicker="From the vault" title="This day in Brewers history">{children}</Section>
+
   if (error) return null
-  if (!items) return <div ref={ref}><Loading lines={2} /></div>
+  if (!items) return wrap(<div ref={ref}><Loading lines={2} /></div>)
   if (!items.length) {
-    return <div style={{ fontFamily: theme.sans, fontSize: 14, color: theme.muted }}>No Brewers games fell on today's date in seasons past.</div>
+    return wrap(<div style={{ fontFamily: theme.sans, fontSize: 14, color: theme.muted }}>No Brewers games fell on today's date in seasons past.</div>)
   }
 
   const top = items[0]
   const hit = top.won ? winningHitSentence(detail) : null
   const recordClause = top.record ? `, ${top.won ? 'improving to' : 'dropping to'} ${top.record.wins}–${top.record.losses}` : ''
 
-  return (
+  return wrap(
     <div style={{ border: `1px solid ${theme.rule}`, borderLeft: `3px solid ${theme.gold}`, borderRadius: 8, background: theme.wash, padding: '20px 22px' }}>
       <div style={{ fontFamily: theme.serif, fontSize: 21, color: theme.ink, lineHeight: 1.4, maxWidth: 660 }}>
         On this day in {top.year}, {top.text}{recordClause}.

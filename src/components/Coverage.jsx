@@ -5,11 +5,13 @@ import { fetchBrewersCoverage } from '../wpr.js'
 import { track } from '../analytics.js'
 import { Loading } from './Status.jsx'
 import { useIsNarrow } from '../useIsNarrow.js'
+import Section from './Section.jsx'
 
 // "From the newsroom" — WPR's own recent Brewers coverage, fetched live from their WordPress
-// REST API. Self-contained and fail-soft (renders nothing on error). The per-card links use
-// target=_top so a tap navigates the hosting page to the article — driving readers into WPR's
-// coverage. Deferred until the section nears the viewport so it never competes with the live feeds.
+// REST API. Self-contained and fail-soft: it owns its Section chrome, so on error/empty the
+// heading disappears along with the content (no orphaned "From the newsroom" title). The per-card
+// links use target=_top so a tap navigates the hosting page to the article — driving readers into
+// WPR's coverage. Deferred until the section nears the viewport so it never competes with the live feeds.
 export default function Coverage() {
   const ref = useRef(null)
   const [armed, setArmed] = useState(false)
@@ -35,8 +37,10 @@ export default function Coverage() {
     fetchBrewersCoverage(4).then(setPosts).catch(() => setError(true))
   }, [armed])
 
+  const wrap = (children) => <Section kicker="From the newsroom" title="WPR Brewers coverage">{children}</Section>
+
   if (error) return null
-  if (!posts) return <div ref={ref}><Loading lines={2} /></div>
+  if (!posts) return wrap(<div ref={ref}><Loading lines={2} /></div>)
   if (!posts.length) return null
 
   const date = (iso) => {
@@ -47,7 +51,7 @@ export default function Coverage() {
     return d.toLocaleDateString('en-US', opts)
   }
 
-  return (
+  return wrap(
     <div>
       <div style={{ display: 'grid', gridTemplateColumns: narrow ? '1fr' : 'repeat(auto-fill, minmax(240px, 1fr))', gap: 14 }}>
         {posts.map((p) => (

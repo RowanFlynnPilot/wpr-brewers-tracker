@@ -126,10 +126,10 @@ export default function App() {
         {tab === 'schedule' && (
           <>
             <Section kicker="Recent & upcoming" title="The schedule"><Schedule /></Section>
-            {WPR_NEWS && <Section kicker="From the newsroom" title="WPR Brewers coverage"><Coverage /></Section>}
+            {WPR_NEWS && <Coverage />}
             <SponsorBand />
             {WATCH_PARTY && <Section kicker="Where to watch" title="Catch the games this week"><WhereToWatch venue={WATCH_PARTY} /></Section>}
-            <Section kicker="From the vault" title="This day in Brewers history"><ThisDay /></Section>
+            <ThisDay />
           </>
         )}
 
