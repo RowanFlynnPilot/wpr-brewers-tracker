@@ -71,8 +71,9 @@ export default function Schedule() {
             </div>
             {final || live ? (
               <>
-                <div style={{ fontFamily: theme.serif, fontSize: 20, marginTop: 3, color: won ? theme.navy : theme.ink }}>
-                  {won ? 'W' : final ? 'L' : ''} {myScore}{'\u2013'}{oppScore}
+                <div style={{ fontFamily: theme.serif, fontSize: 20, marginTop: 3, color: won ? theme.navy : final ? theme.red : theme.ink }}>
+                  {(won || final) && <span style={{ fontWeight: 700 }}>{won ? 'W' : 'L'} </span>}
+                  <span style={{ color: won ? theme.navy : theme.ink }}>{myScore}{'\u2013'}{oppScore}</span>
                 </div>
                 <div style={{ fontFamily: theme.sans, fontSize: 11, fontWeight: 700, color: theme.gold, marginTop: 6 }}>Box score {'\u2192'}</div>
               </>

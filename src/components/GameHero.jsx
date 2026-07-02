@@ -81,6 +81,8 @@ export default function GameHero() {
   const [seasonSeries, setSeasonSeries] = useState(null) // { w, l } vs the featured opponent
   const [oppForm, setOppForm] = useState(null) // opponent record/streak/L10 (upcoming games)
   const [copied, setCopied] = useState(false) // share-button clipboard feedback
+  const [pop, setPop] = useState(false) // score-change animation trigger
+  const prevScore = useRef(null)
   const narrow = useIsNarrow()
 
   // Opt-in game alert. Notifications only work on the standalone page (cross-origin iframes block
@@ -126,6 +128,20 @@ export default function GameHero() {
     document.addEventListener('visibilitychange', refresh)
     return () => { clearInterval(id); document.removeEventListener('visibilitychange', refresh) }
   }, [live, gamePk, load])
+
+  // Pop the score once whenever it changes during play (never on first paint) — same
+  // micro-interaction as the minis, shared .score-pop keyframes.
+  useEffect(() => {
+    if (!game || game.status.abstractGameState === 'Preview') { prevScore.current = null; return }
+    const key = `${game.teams.home.score}-${game.teams.away.score}`
+    if (prevScore.current != null && prevScore.current !== key) {
+      setPop(true)
+      const t = setTimeout(() => setPop(false), 600)
+      prevScore.current = key
+      return () => clearTimeout(t)
+    }
+    prevScore.current = key
+  }, [game])
 
   // Fire an alert once when the featured game flips to live (only if opted in + permitted).
   // wasLive starts null so a page opened mid-game sets the baseline silently — only an
@@ -269,7 +285,7 @@ export default function GameHero() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: matchupGap, flexWrap: 'wrap', margin: '22px 0 18px' }}>
         <TeamBlock team={me} name="Brewers" />
         {showScore ? (
-          <div aria-live="polite" style={{ display: 'flex', alignItems: 'center', gap: 14, fontFamily: theme.serif, fontSize: scoreSize, lineHeight: 1 }}>
+          <div aria-live="polite" className={pop ? 'score-pop' : undefined} style={{ display: 'flex', alignItems: 'center', gap: 14, fontFamily: theme.serif, fontSize: scoreSize, lineHeight: 1 }}>
             <span style={{ color: won ? theme.navy : theme.ink, fontWeight: won ? 700 : 400 }}>{me.score}</span>
             <span style={{ fontSize: scoreSize * 0.5, color: theme.muted }}>–</span>
             <span style={{ color: theme.ink }}>{opp.score}</span>

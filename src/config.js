@@ -64,6 +64,10 @@ export const WPR_LOGO = 'https://wausaupilotandreview.com/wp-content/uploads/202
 export const WPR_TAGLINE = 'Where Locals Look First For News'
 export const WPR_URL = 'https://wausaupilotandreview.com/'
 
+// Franchise-best win total — the Pulse pace bar measures the current pace against it.
+// Brewers: 97–65 in 2025. Update if the club sets a new mark.
+export const FRANCHISE_BEST = { wins: 97, year: 2025 }
+
 // Canonical URL of the standalone tracker — used by the share button, the calendar-event
 // description, and the social-card tags in index.html.
 export const SITE_URL = 'https://rowanflynnpilot.github.io/wpr-brewers-tracker/'

@@ -1,9 +1,32 @@
+import { useEffect, useState } from 'react'
 import { theme } from '../theme.js'
-import { TEAM_ID } from '../config.js'
+import { TEAM_ID, FRANCHISE_BEST } from '../config.js'
 import { useIsNarrow } from '../useIsNarrow.js'
 import { Loading, ErrorState } from './Status.jsx'
 
 const DASH = '–'
+
+// Marquee numbers tick up on their first paint (once per session — refreshes and tab returns
+// render static). Every digit group in the string animates 0 → value with an ease-out curve;
+// prefers-reduced-motion renders the final value immediately.
+let pulseAnimated = false
+function CountUp({ text, animate }) {
+  const [display, setDisplay] = useState(() => (animate ? text.replace(/\d+/g, '0') : text))
+  useEffect(() => {
+    if (!animate) { setDisplay(text); return }
+    const t0 = performance.now()
+    let raf
+    const step = (t) => {
+      const p = Math.min(1, (t - t0) / 700)
+      const e = 1 - Math.pow(1 - p, 3)
+      setDisplay(text.replace(/\d+/g, (m) => String(Math.round(Number(m) * e))))
+      if (p < 1) raf = requestAnimationFrame(step)
+    }
+    raf = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(raf)
+  }, [text, animate])
+  return display
+}
 const gamesBack = (lw, ll, w, l) => ((lw - w) + (l - ll)) / 2
 const ord = (n) => { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]) }
 
@@ -12,6 +35,9 @@ const ord = (n) => { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n +
 // then a short narrative.
 export default function Pulse({ standings, lastGame, ranks, error }) {
   const narrow = useIsNarrow()
+  // Decide the animation once, before any early return can reorder hooks-free logic below.
+  const animate = !pulseAnimated && typeof window !== 'undefined' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  useEffect(() => { if (standings) pulseAnimated = true }, [standings])
   if (!standings) return error ? <ErrorState /> : <Loading />
 
   const me = standings.find((t) => t.team.id === TEAM_ID)
@@ -44,7 +70,7 @@ export default function Pulse({ standings, lastGame, ranks, error }) {
   // Marquee stats — boxed stat tiles. Run diff / streak / lead are color-coded (navy good, red bad).
   const cell = (value, label, color = theme.ink) => (
     <div style={{ flex: '1 1 120px', minWidth: 104, border: `1px solid ${theme.rule}`, borderRadius: 8, padding: narrow ? '12px 13px' : '14px 16px' }}>
-      <div style={{ fontFamily: theme.serif, fontSize: narrow ? 28 : 34, color, lineHeight: 1 }}>{value}</div>
+      <div style={{ fontFamily: theme.serif, fontSize: narrow ? 28 : 34, color, lineHeight: 1 }}><CountUp text={String(value)} animate={animate} /></div>
       <div style={{ fontFamily: theme.sans, fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: theme.muted, marginTop: 8 }}>{label}</div>
     </div>
   )
@@ -98,6 +124,30 @@ export default function Pulse({ standings, lastGame, ranks, error }) {
       )}
 
       {note && <div style={{ fontFamily: theme.sans, fontSize: 13, color: theme.muted, marginTop: 8, lineHeight: 1.55, maxWidth: 620 }}>{note}</div>}
+
+      {/* Pace vs the franchise-best season — Wisconsin-pride bait when the club is rolling. */}
+      {xSeason && (() => {
+        const pace = xSeason.wins
+        const best = FRANCHISE_BEST
+        const scaleMax = Math.max(110, pace + 4, best.wins + 4)
+        const pct = (v) => `${(v / scaleMax) * 100}%`
+        const chasing = pace >= best.wins
+        return (
+          <div style={{ marginTop: 18, maxWidth: 620 }}>
+            <div style={{ fontFamily: theme.sans, fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: theme.muted, marginBottom: 7 }}>
+              Win pace vs franchise best
+            </div>
+            <div style={{ position: 'relative', height: 10, borderRadius: 5, background: theme.rule }}>
+              <div style={{ width: pct(pace), height: '100%', borderRadius: 5, background: chasing ? theme.gold : theme.navy, transition: 'width 0.6s ease' }} />
+              <div style={{ position: 'absolute', left: pct(best.wins), top: -4, width: 2, height: 18, background: theme.ink }} />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: theme.sans, fontSize: 11.5, marginTop: 5 }}>
+              <span style={{ color: theme.navy, fontWeight: 700 }}>On pace for {pace} wins{chasing ? ' — a franchise record' : ''}</span>
+              <span style={{ color: theme.muted }}>Best: {best.wins} ({best.year})</span>
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }
