@@ -61,9 +61,13 @@ export default function PlayerCardHost() {
   const p = card?.person
   const s = card?.season
   const day = (iso) => new Date(`${iso}T12:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  const weekday = (iso) => new Date(`${iso}T12:00:00`).toLocaleDateString('en-US', { weekday: 'short' })
   const oppName = (g) => TEAM_NAMES[g.opponent?.id] || g.opponent?.teamName || g.opponent?.name || ''
   const hitLine = (st) => `${st.hits}-${st.atBats}${st.homeRuns ? `, ${st.homeRuns} HR` : ''}${st.rbi ? `, ${st.rbi} RBI` : ''}${st.stolenBases ? `, ${st.stolenBases} SB` : ''}`
   const pitLine = (st) => `${st.inningsPitched} IP, ${st.earnedRuns} ER, ${st.strikeOuts} K`
+  // A game worth a second look gets the gold tick: multi-hit or a homer at the plate,
+  // a zero-earned-run outing on the mound.
+  const standout = (st) => (card?.isPitcher ? (st.earnedRuns === 0 && parseFloat(st.inningsPitched) >= 1) : ((st.hits || 0) >= 2 || (st.homeRuns || 0) >= 1))
 
   return (
     <div onClick={() => setId(null)} role="dialog" aria-modal="true" aria-label="Player card"
@@ -98,15 +102,28 @@ export default function PlayerCardHost() {
             )}
 
             {card.log.length > 0 && (
-              <div style={{ marginTop: 14 }}>
-                <div style={{ ...label, marginBottom: 4 }}>Last {card.log.length} games</div>
-                {card.log.map((g, i) => (
-                  <div key={i} style={{ display: 'flex', gap: 10, fontSize: 12.5, padding: '5px 0', borderTop: i ? `1px solid ${theme.rule}` : 'none' }}>
-                    <span style={{ color: theme.gold, fontWeight: 700, fontSize: 10, textTransform: 'uppercase', width: 50, flexShrink: 0, paddingTop: 1 }}>{day(g.date)}</span>
-                    <span style={{ color: theme.muted, width: 84, flexShrink: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{g.isHome ? 'vs' : '@'} {oppName(g)}</span>
-                    <span style={{ color: theme.ink }}>{card.isPitcher ? pitLine(g.stat) : hitLine(g.stat)}</span>
-                  </div>
-                ))}
+              <div style={{ marginTop: 16 }}>
+                <div style={{ ...label, marginBottom: 6 }}>Last {card.log.length} games</div>
+                {card.log.map((g, i) => {
+                  const hot = standout(g.stat)
+                  return (
+                    <div key={i} style={{ display: 'flex', gap: 14, alignItems: 'flex-start', padding: '9px 0', borderTop: i ? `1px solid ${theme.rule}` : 'none' }}>
+                      <div style={{ width: 46, flexShrink: 0, textAlign: 'center', paddingTop: 1 }}>
+                        <div style={{ color: theme.gold, fontWeight: 700, fontSize: 11, textTransform: 'uppercase', lineHeight: 1.2 }}>{day(g.date)}</div>
+                        <div style={{ color: theme.muted, fontSize: 9.5, textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: 1 }}>{weekday(g.date)}</div>
+                      </div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ fontSize: 13.5, color: theme.ink, fontWeight: hot ? 700 : 400, lineHeight: 1.35 }}>
+                          {hot && <span style={{ color: theme.gold, marginRight: 5 }}>▲</span>}
+                          {card.isPitcher ? pitLine(g.stat) : hitLine(g.stat)}
+                        </div>
+                        <div style={{ fontSize: 11.5, color: theme.muted, marginTop: 2, lineHeight: 1.4 }}>
+                          {g.isHome ? 'vs' : 'at'} {oppName(g)}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             )}
           </>
