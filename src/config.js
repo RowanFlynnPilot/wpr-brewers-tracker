@@ -135,6 +135,36 @@ export const SPONSOR_INQUIRY = 'weber.chris@wausaupilotandreview.com'
 // (`let`, not `const`: sales demo mode below fills it with placeholder listings.)
 export let WATCH_VENUES = []
 
+// Prospect Watch — the org's top prospects, one entry per player ({ rank, id, name, pos }).
+// THE ORDERING IS EDITORIAL AND HAND-MAINTAINED: Baseball America is paywalled (no API), so
+// their list can't be fetched live. Paste BA's current Brewers Top 20 here whenever it updates
+// (a subscriber task, ~2-3x a season) and set PROSPECT_CREDIT to match. Everything else on the
+// page — teams, levels, season stats, recent form, game logs — is LIVE from the MLB Stats API.
+// `id` is the MLB personId (statsapi people id). The seeded order below is an interim WPR
+// ranking assembled from org rosters; swap in BA's order before crediting them.
+export const PROSPECT_CREDIT = 'Rankings: Wausau Pilot & Review staff · stats update live'
+export const TOP_PROSPECTS = [
+  { rank: 1, id: 815908, name: 'Jesús Made', pos: 'SS' },
+  { rank: 2, id: 821270, name: 'Luis Peña', pos: 'SS' },
+  { rank: 3, id: 806198, name: 'Cooper Pratt', pos: 'SS' },
+  { rank: 4, id: 702652, name: 'Andrew Fischer', pos: '3B' },
+  { rank: 5, id: 815520, name: 'Braylon Payne', pos: 'OF' },
+  { rank: 6, id: 800724, name: 'Eric Bitonti', pos: '3B' },
+  { rank: 7, id: 815816, name: 'Brady Ebel', pos: 'SS' },
+  { rank: 8, id: 811309, name: 'Bishop Letson', pos: 'RHP' },
+  { rank: 9, id: 702726, name: 'Luke Adams', pos: '3B' },
+  { rank: 10, id: 815304, name: 'Josh Adamczewski', pos: 'OF' },
+  { rank: 11, id: 695501, name: 'Blake Burke', pos: '1B' },
+  { rank: 12, id: 694385, name: 'Brock Wilken', pos: '3B' },
+  { rank: 13, id: 701392, name: 'Marco Dinges', pos: 'C' },
+  { rank: 14, id: 684974, name: 'Craig Yoho', pos: 'RHP' },
+  { rank: 15, id: 806995, name: 'Filippo Di Turi', pos: 'SS' },
+  { rank: 16, id: 802506, name: "Dylan O'Rae", pos: 'CF' },
+  { rank: 17, id: 687521, name: 'Eric Brown Jr.', pos: 'SS' },
+  { rank: 18, id: 824620, name: 'Tyson Hardin', pos: 'RHP' },
+  { rank: 19, id: 823182, name: 'Braylon Owens', pos: 'RHP' },
+]
+
 // Shown in the footer when a gaming brand is the title sponsor. Editable; set to '' to hide.
 export const SPONSOR_DISCLAIMER =
   'Must be 21+. If you or someone you know has a gambling problem, call 1-800-GAMBLER.'

@@ -59,8 +59,8 @@ MLB Stats API (statsapi.mlb.com) → fetch() in browser → React/Vite → GitHu
   pulse + milestones + standings/vs-Central + race + playoff odds + road ahead), Schedule (watch
   guide + schedule + homestand + injuries + roster moves + coverage + sponsor band + this-day),
   Hitters (leaders + HR + spray + form), Pitching (leaders + bullpen check + strikeout + arsenal +
-  game flow). Tabs are deep-linkable (`?tab=schedule`; switching rewrites the param via
-  replaceState, preserving other params). Only the active tab renders, so a
+  game flow), Farm (prospect watch). Tabs are deep-linkable (`?tab=schedule`; switching rewrites
+  the param via replaceState, preserving other params). Only the active tab renders, so a
   tab's heavy season-wide fetches fire only when opened — and `api.js` memoizes those scans
   (`cached()`, short TTL) so flipping back to a tab is instant, not a refetch. Masthead, banner +
   title sponsor, the updated stamp, and the footer stay pinned across all tabs. Tab switches fire a
@@ -89,8 +89,14 @@ MLB Stats API (statsapi.mlb.com) → fetch() in browser → React/Vite → GitHu
     `config.js`, browser-only, never visible without the param. Same pattern as the Packers
     tracker. Demo link for sales: `/?demo&tab=schedule`.
   - `PlayerCard` — tap-any-player modal. One `<PlayerCardHost/>` mounts in App; any surface calls
-    the exported `openPlayerCard(id)` (module-level hook, no prop threading). Card data is one
-    cached bundle (`fetchPlayerCard`): bio + season line + last-5 log + hitter L/R splits.
+    the exported `openPlayerCard(id, sportId?)` (module-level hook, no prop threading). Card data
+    is one cached bundle (`fetchPlayerCard`): bio + season line + last-5 log + hitter L/R splits
+    (majors only). `sportId` targets a minor league so Prospect Watch cards work.
+  - `ProspectWatch` (the Farm tab) — top-prospect list with LIVE MiLB data: current club + level
+    (from `fetchFarmLevels`, which also trade-proofs the list — players off the org's clubs are
+    dropped), season line at that level, and a last-10 form blurb from the game log. The ORDERING
+    is `TOP_PROSPECTS` in config — hand-curated, because Baseball America is paywalled with no
+    API (do NOT try to scrape it; the owner pastes BA's list in and sets `PROSPECT_CREDIT`).
   - `PlayoffOdds` runs a 4,000-sim rest-of-season Monte Carlo IN THE BROWSER (regressed win%,
     normal-approx binomial) — a deliberate house model, labeled as such; not a data cron.
   - `Status` — `Loading` + `ErrorState`.

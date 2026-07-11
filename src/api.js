@@ -433,20 +433,73 @@ export function fetchHitterSplits(personId) {
 
 // Everything the player tap-card needs, one cached bundle per player: bio + season line, the
 // last few game logs, and (for hitters) the L/R splits. Group picked from the primary position.
-export function fetchPlayerCard(personId) {
-  return cached(`card:${personId}`, 300000, async () => {
-    const data = await getJSON(`/people/${personId}?hydrate=stats(group=[hitting,pitching],type=season)`)
+// `sportId` targets a minor league (11 AAA … 16 rookie) for Prospect Watch tap-cards; the
+// default (1) is the majors. L/R splits are majors-only — skipped for MiLB.
+export function fetchPlayerCard(personId, sportId = 1) {
+  return cached(`card:${personId}:${sportId}`, 300000, async () => {
+    const data = await getJSON(`/people/${personId}`)
     const person = data.people?.[0]
     if (!person) throw new Error('player not found')
-    const isPitcher = person.primaryPosition?.abbreviation === 'P'
+    const isPitcher = (person.primaryPosition?.abbreviation || '').includes('P')
     const group = isPitcher ? 'pitching' : 'hitting'
-    const season = (person.stats || []).find((s) => s.group?.displayName === group)?.splits?.[0]?.stat || null
-    const [logData, splits] = await Promise.all([
-      getJSON(`/people/${personId}/stats?stats=gameLog&season=${SEASON}&group=${group}`).catch(() => null),
-      isPitcher ? Promise.resolve(null) : fetchHitterSplits(personId).catch(() => null),
+    const [seasonData, logData, splits] = await Promise.all([
+      getJSON(`/people/${personId}/stats?stats=season&season=${SEASON}&group=${group}&sportId=${sportId}`).catch(() => null),
+      getJSON(`/people/${personId}/stats?stats=gameLog&season=${SEASON}&group=${group}&sportId=${sportId}`).catch(() => null),
+      sportId === 1 && !isPitcher ? fetchHitterSplits(personId).catch(() => null) : Promise.resolve(null),
     ])
+    const season = seasonData?.stats?.[0]?.splits?.[0]?.stat || null
     const log = (logData?.stats?.[0]?.splits || []).slice(-5).reverse()
     return { person, isPitcher, season, log, splits }
+  })
+}
+
+// Brewers farm affiliates → level labels, for Prospect Watch (one cached call). Includes the
+// rookie complex clubs; the MLB club maps too, so a just-called-up prospect renders honestly.
+export function fetchFarmLevels() {
+  return cached('farmLevels', 600000, async () => {
+    const data = await getJSON(`/teams?sportIds=11,12,13,14,16&season=${SEASON}`)
+    const LEVEL = { 11: 'AAA', 12: 'AA', 13: 'A+', 14: 'A', 16: 'RK' }
+    const map = { [TEAM_ID]: { level: 'MLB', sportId: 1, team: 'Milwaukee Brewers' } }
+    data.teams.filter((t) => t.parentOrgId === TEAM_ID).forEach((t) => {
+      map[t.id] = { level: LEVEL[t.sport.id] || t.sport.abbreviation || '', sportId: t.sport.id, team: t.name }
+    })
+    return map
+  })
+}
+
+// Prospect Watch: live team/level + season line + recent form for the curated TOP_PROSPECTS
+// list. Three small calls per player (person, season, game log), pooled and failure-tolerant —
+// the same deliberate fan-out pattern as the other deferred scans; fires only when the Farm tab
+// opens and caches for the session.
+export function fetchProspects(list) {
+  return cached('prospects', 300000, async () => {
+    const levels = await fetchFarmLevels()
+    const rows = await pooled(list, 6, async (p) => {
+      const person = (await getJSON(`/people/${p.id}?hydrate=currentTeam`)).people?.[0]
+      if (!person) return null
+      const teamId = person.currentTeam?.id
+      const lv = levels[teamId] || null
+      if (!lv) return null // traded or off the org's clubs — drop silently rather than mislabel
+      const sportId = lv.sportId
+      const isPitcher = (person.primaryPosition?.abbreviation || p.pos || '').includes('P')
+      const group = isPitcher ? 'pitching' : 'hitting'
+      const [seasonData, logData] = await Promise.all([
+        getJSON(`/people/${p.id}/stats?stats=season&season=${SEASON}&group=${group}&sportId=${sportId}`).catch(() => null),
+        getJSON(`/people/${p.id}/stats?stats=gameLog&season=${SEASON}&group=${group}&sportId=${sportId}`).catch(() => null),
+      ])
+      return {
+        ...p,
+        age: person.currentAge ?? null,
+        posLive: person.primaryPosition?.abbreviation || p.pos,
+        isPitcher,
+        team: lv?.team || person.currentTeam?.name || '',
+        level: lv?.level || '',
+        sportId,
+        season: seasonData?.stats?.[0]?.splits?.[0]?.stat || null,
+        log: (logData?.stats?.[0]?.splits || []).slice(-10),
+      }
+    })
+    return rows.filter(Boolean)
   })
 }
 

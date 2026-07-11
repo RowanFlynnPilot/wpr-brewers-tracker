@@ -28,6 +28,7 @@ import InjuryReport from './components/InjuryReport.jsx'
 import HomestandGuide from './components/HomestandGuide.jsx'
 import RosterMoves from './components/RosterMoves.jsx'
 import BullpenCheck from './components/BullpenCheck.jsx'
+import ProspectWatch from './components/ProspectWatch.jsx'
 import Strikeouts from './components/Strikeouts.jsx'
 import HomeRuns from './components/HomeRuns.jsx'
 import Arsenal from './components/Arsenal.jsx'
@@ -48,6 +49,7 @@ const TABS = [
   { id: 'schedule', label: 'Schedule' },
   { id: 'hitters', label: 'Hitters' },
   { id: 'pitching', label: 'Pitching' },
+  { id: 'farm', label: 'Farm' },
 ]
 
 // Subtle "Updated Xm ago" stamp; re-renders every 30s so the relative time stays current.
@@ -182,6 +184,8 @@ export default function App() {
             <Section kicker="How it unfolded" title="Game flow"><GameFlow /></Section>
           </>
         )}
+
+        {tab === 'farm' && <ProspectWatch />}
 
         <PlayerCardHost />
         <footer style={{ borderTop: `1px solid ${theme.rule}`, padding: '22px 0 44px', fontFamily: theme.sans, fontSize: 11, color: theme.muted, lineHeight: 1.6 }}>

@@ -9,9 +9,10 @@ import { Loading } from './Status.jsx'
 // matchup edge, injuries, bullpen) calls openPlayerCard(id) — a module-level hook so callers
 // don't thread props through the tree. Card: bio, season line, L/R splits, last five games.
 // Fail-soft: a failed fetch just closes the card.
+// `sportId` lets Prospect Watch open cards for minor leaguers (game log + season at their level).
 let listener = null
-export function openPlayerCard(id) {
-  if (listener) listener(id)
+export function openPlayerCard(id, sportId = 1) {
+  if (listener) listener(id, sportId)
 }
 
 const label = { fontFamily: 'inherit', fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6b6b6b', fontWeight: 700 }
@@ -30,21 +31,23 @@ function StatGrid({ items }) {
 }
 
 export default function PlayerCardHost() {
-  const [id, setId] = useState(null)
+  const [target, setTarget] = useState(null) // { id, sportId }
   const [card, setCard] = useState(null)
+  const id = target?.id || null
+  const setId = (v) => setTarget(v ? { id: v, sportId: target?.sportId || 1 } : null)
 
   useEffect(() => {
-    listener = (pid) => { setId(pid); track('Player Card') }
+    listener = (pid, sportId) => { setTarget({ id: pid, sportId: sportId || 1 }); track('Player Card') }
     return () => { listener = null }
   }, [])
 
   useEffect(() => {
     setCard(null)
-    if (!id) return
+    if (!target) return
     let alive = true
-    fetchPlayerCard(id).then((c) => { if (alive) setCard(c) }).catch(() => { if (alive) setId(null) })
+    fetchPlayerCard(target.id, target.sportId).then((c) => { if (alive) setCard(c) }).catch(() => { if (alive) setTarget(null) })
     return () => { alive = false }
-  }, [id])
+  }, [target])
 
   useEffect(() => {
     if (!id) return
@@ -58,7 +61,7 @@ export default function PlayerCardHost() {
   const p = card?.person
   const s = card?.season
   const day = (iso) => new Date(`${iso}T12:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-  const oppName = (g) => TEAM_NAMES[g.opponent?.id] || g.opponent?.teamName || ''
+  const oppName = (g) => TEAM_NAMES[g.opponent?.id] || g.opponent?.teamName || g.opponent?.name || ''
   const hitLine = (st) => `${st.hits}-${st.atBats}${st.homeRuns ? `, ${st.homeRuns} HR` : ''}${st.rbi ? `, ${st.rbi} RBI` : ''}${st.stolenBases ? `, ${st.stolenBases} SB` : ''}`
   const pitLine = (st) => `${st.inningsPitched} IP, ${st.earnedRuns} ER, ${st.strikeOuts} K`
 
