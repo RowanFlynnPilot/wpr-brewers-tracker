@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { theme } from '../theme.js'
-import { TOP_PROSPECTS, PROSPECT_CREDIT, headshot } from '../config.js'
+import { TOP_PROSPECTS, PROSPECT_CREDIT, prospectHeadshot } from '../config.js'
 import { fetchProspects } from '../api.js'
 import Section from './Section.jsx'
 import { openPlayerCard } from './PlayerCard.jsx'
@@ -75,7 +75,7 @@ export default function ProspectWatch() {
               onClick={() => openPlayerCard(p.id, p.sportId)} onKeyDown={(e) => e.key === 'Enter' && openPlayerCard(p.id, p.sportId)}
               style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 6px', borderTop: i ? `1px solid ${theme.rule}` : 'none', cursor: 'pointer' }}>
               <span style={{ fontFamily: theme.serif, fontSize: 18, color: p.rank <= 5 ? theme.gold : theme.muted, fontWeight: 700, width: 26, textAlign: 'right', flexShrink: 0 }}>{p.rank}</span>
-              <img src={headshot(p.id)} alt="" width={38} height={38} style={{ borderRadius: '50%', objectFit: 'cover', background: theme.wash, flexShrink: 0 }} onError={(e) => { e.currentTarget.style.visibility = 'hidden' }} />
+              <img src={prospectHeadshot(p.id)} alt="" width={38} height={38} style={{ borderRadius: '50%', objectFit: 'cover', background: theme.wash, flexShrink: 0 }} onError={(e) => { e.currentTarget.style.visibility = 'hidden' }} />
               <div style={{ minWidth: 0, flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   <span style={{ fontFamily: theme.serif, fontSize: 15.5, fontWeight: p.rank <= 5 ? 700 : 400, color: theme.ink }}>{p.name}</span>

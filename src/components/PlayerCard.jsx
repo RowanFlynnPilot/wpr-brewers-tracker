@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { theme } from '../theme.js'
-import { TEAM_NAMES, headshot } from '../config.js'
+import { TEAM_NAMES, headshot, prospectHeadshot } from '../config.js'
 import { fetchPlayerCard } from '../api.js'
 import { track } from '../analytics.js'
 import { Loading } from './Status.jsx'
@@ -78,7 +78,7 @@ export default function PlayerCardHost() {
         {!card ? <Loading lines={3} /> : (
           <>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-              <img src={headshot(p.id)} alt="" width={64} height={64} style={{ borderRadius: '50%', objectFit: 'cover', background: theme.wash, flexShrink: 0 }} onError={(e) => { e.currentTarget.style.visibility = 'hidden' }} />
+              <img src={target.sportId !== 1 ? prospectHeadshot(p.id) : headshot(p.id)} alt="" width={64} height={64} style={{ borderRadius: '50%', objectFit: 'cover', background: theme.wash, flexShrink: 0 }} onError={(e) => { e.currentTarget.style.visibility = 'hidden' }} />
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontFamily: theme.serif, fontSize: 22, color: theme.ink, lineHeight: 1.1 }}>{p.fullName}</div>
                 <div style={{ fontSize: 12, color: theme.muted, marginTop: 3 }}>

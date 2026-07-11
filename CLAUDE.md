@@ -95,8 +95,10 @@ MLB Stats API (statsapi.mlb.com) → fetch() in browser → React/Vite → GitHu
   - `ProspectWatch` (the Farm tab) — top-prospect list with LIVE MiLB data: current club + level
     (from `fetchFarmLevels`, which also trade-proofs the list — players off the org's clubs are
     dropped), season line at that level, and a last-10 form blurb from the game log. The ORDERING
-    is `TOP_PROSPECTS` in config — hand-curated, because Baseball America is paywalled with no
-    API (do NOT try to scrape it; the owner pastes BA's list in and sets `PROSPECT_CREDIT`).
+    is `TOP_PROSPECTS` in config — hand-synced with MLB Pipeline (mlb.com/milb/prospects/brewers;
+    its backing GraphQL at data-graph.mlb.com is NOT CORS-open, verified — don't try to fetch it
+    live or add a cron). Photos use `prospectHeadshot()` (img.mlbstatic MiLB portraits with
+    MLB's own generic fallback baked into the URL).
   - `PlayoffOdds` runs a 4,000-sim rest-of-season Monte Carlo IN THE BROWSER (regressed win%,
     normal-approx binomial) — a deliberate house model, labeled as such; not a data cron.
   - `Status` — `Loading` + `ErrorState`.
