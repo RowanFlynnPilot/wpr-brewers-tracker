@@ -115,7 +115,7 @@ export const SPONSORS = {
 }
 
 // Where to send sponsorship inquiries (shown on empty slots — the upsell).
-export const SPONSOR_INQUIRY = 'sales@wausaupilotandreview.com'
+export const SPONSOR_INQUIRY = 'weber.chris@wausaupilotandreview.com'
 
 // "Where to watch" — the game-day guide: bar/restaurant listings sold PER LISTING (each card
 // is its own sponsorship). Hidden until at least one venue is sold: an empty list renders no
