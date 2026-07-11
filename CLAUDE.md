@@ -95,7 +95,10 @@ MLB Stats API (statsapi.mlb.com) → fetch() in browser → React/Vite → GitHu
   - `PlayerCard` — tap-any-player modal. One `<PlayerCardHost/>` mounts in App; any surface calls
     the exported `openPlayerCard(id, sportId?)` (module-level hook, no prop threading). Card data
     is one cached bundle (`fetchPlayerCard`): bio + season line + last-5 log + hitter L/R splits
-    (majors only). `sportId` targets a minor league so Prospect Watch cards work.
+    (majors only). `sportId` targets a minor league so Prospect Watch cards work. INSIDE THE
+    EMBED the card anchors to the tap position instead of flex-centering — the auto-resized
+    iframe has no inner scroll, so `fixed` centering would park it off the reader's screen
+    (host scroll is unreadable cross-origin; the tap point is the only visibility signal).
   - `ProspectWatch` (the Farm tab) — top-prospect list with LIVE MiLB data: current club + level
     (from `fetchFarmLevels`, which also trade-proofs the list — players off the org's clubs are
     dropped), season line at that level, and a last-10 form blurb from the game log. The ORDERING

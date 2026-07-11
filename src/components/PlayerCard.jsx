@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { theme } from '../theme.js'
 import { TEAM_NAMES, headshot, prospectHeadshot } from '../config.js'
 import { fetchPlayerCard } from '../api.js'
@@ -30,14 +30,37 @@ function StatGrid({ items }) {
   )
 }
 
+// Inside the auto-resized WPR iframe there is no inner scroll — the iframe is as tall as the
+// whole page, so `position: fixed` spans the entire widget and flex-centering parks the card
+// hundreds of pixels from what the reader can actually see. We can't read the HOST page's
+// scroll position (cross-origin), but the reader's finger just told us where their screen is:
+// anchor the card near the tap instead. Standalone keeps true viewport centering.
+const embedded = typeof window !== 'undefined' && window.self !== window.top
+
 export default function PlayerCardHost() {
-  const [target, setTarget] = useState(null) // { id, sportId }
+  const [target, setTarget] = useState(null) // { id, sportId, anchorY? (embed: tap position) }
   const [card, setCard] = useState(null)
+  const lastTapY = useRef(0)
   const id = target?.id || null
-  const setId = (v) => setTarget(v ? { id: v, sportId: target?.sportId || 1 } : null)
+  const setId = (v) => setTarget(v ? { ...target, id: v } : null)
+
+  // Track the last pointer position (capture phase — fires before the click that opens the card).
+  useEffect(() => {
+    if (!embedded) return
+    const onDown = (e) => { lastTapY.current = e.clientY }
+    document.addEventListener('pointerdown', onDown, true)
+    return () => document.removeEventListener('pointerdown', onDown, true)
+  }, [])
 
   useEffect(() => {
-    listener = (pid, sportId) => { setTarget({ id: pid, sportId: sportId || 1 }); track('Player Card') }
+    listener = (pid, sportId) => {
+      // In the embed, clientY === pageY (no inner scroll). Open the card just above the tap,
+      // clamped so it never hangs past either end of the document.
+      const docH = document.documentElement.scrollHeight
+      const anchorY = embedded ? Math.max(12, Math.min(lastTapY.current - 90, docH - 600)) : null
+      setTarget({ id: pid, sportId: sportId || 1, anchorY })
+      track('Player Card')
+    }
     return () => { listener = null }
   }, [])
 
@@ -69,10 +92,11 @@ export default function PlayerCardHost() {
   // a zero-earned-run outing on the mound.
   const standout = (st) => (card?.isPitcher ? (st.earnedRuns === 0 && parseFloat(st.inningsPitched) >= 1) : ((st.hits || 0) >= 2 || (st.homeRuns || 0) >= 1))
 
+  const anchored = embedded && target.anchorY != null
   return (
     <div onClick={() => setId(null)} role="dialog" aria-modal="true" aria-label="Player card"
-      style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'rgba(18,40,75,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', borderRadius: 12, borderTop: `4px solid ${theme.gold}`, maxWidth: 440, width: '100%', maxHeight: '86vh', overflowY: 'auto', padding: '20px 22px', fontFamily: theme.sans, position: 'relative' }}>
+      style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'rgba(18,40,75,0.45)', display: 'flex', alignItems: anchored ? 'flex-start' : 'center', justifyContent: 'center', padding: 16 }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', borderRadius: 12, borderTop: `4px solid ${theme.gold}`, maxWidth: 440, width: '100%', maxHeight: anchored ? 560 : '86vh', marginTop: anchored ? target.anchorY : 0, overflowY: 'auto', padding: '20px 22px', fontFamily: theme.sans, position: 'relative' }}>
         <button onClick={() => setId(null)} aria-label="Close" style={{ position: 'absolute', top: 10, right: 12, cursor: 'pointer', background: 'transparent', border: 'none', fontSize: 22, color: theme.muted, lineHeight: 1 }}>×</button>
 
         {!card ? <Loading lines={3} /> : (
