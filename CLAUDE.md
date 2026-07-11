@@ -24,12 +24,16 @@ reliability" — don't. That contradicts the design. The API has 60s cache heade
 built to be hit from browsers. Keeping it client-side is the whole point (simplest path,
 one source of truth, nothing to keep in sync).
 
-ONE sanctioned exception, and it is NOT a data cron: the deploy workflow runs on a twice-daily
-`schedule` to regenerate the **email image** (`public`-served `digest.png`). Email clients strip
-iframes and can't run JS, so the digest is snapshotted to a PNG (headless screenshot of
-`mini-digest.html` via `scripts/render-digest.mjs`). This bakes an *image* for email; it does NOT
-cache the widget's data or feed the widget — the tracker still fetches the API live in the browser.
-Don't delete the schedule thinking it's drift, and don't extend it to caching data.
+TWO sanctioned scheduled jobs exist, and NEITHER is a data cron:
+1. The deploy workflow's twice-daily `schedule` regenerates the **email image** (`digest.png`).
+   Email clients strip iframes and can't run JS, so the digest is snapshotted to a PNG (headless
+   screenshot of `mini-digest.html` via `scripts/render-digest.mjs`). This bakes an *image* for
+   email; it does NOT cache the widget's data — the tracker still fetches the API live.
+2. `prospect-check.yml` runs monthly and is NOTIFICATION-ONLY: it compares `TOP_PROSPECTS` with
+   MLB Pipeline's current list (`scripts/check-prospects.mjs`) and opens a GitHub issue with a
+   paste-ready update when they drift. It never writes site data — a human reviews and applies
+   the sync.
+Don't delete these schedules thinking they're drift, and don't extend either to caching data.
 
 ## Architecture
 

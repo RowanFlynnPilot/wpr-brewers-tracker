@@ -1,0 +1,50 @@
+name: Prospect rankings check
+
+# Monthly NOTIFICATION job — compares the Farm tab's hand-synced TOP_PROSPECTS (src/config.js)
+# with MLB Pipeline's current Brewers list and opens/refreshes a GitHub issue when they drift.
+# It never writes site data (that would be the forbidden data-cron pattern — see CLAUDE.md);
+# a human reviews the issue and applies the sync.
+
+on:
+  schedule:
+    - cron: '0 14 1 * *' # 1st of each month, ~9 AM Central
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Compare config with MLB Pipeline
+        id: check
+        run: |
+          set +e
+          node scripts/check-prospects.mjs > report.md 2> err.log
+          code=$?
+          set -e
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          echo "--- report ---"; cat report.md
+          if [ -s err.log ]; then echo "--- errors ---"; cat err.log; fi
+          # 0 = in sync, 3 = drift (handled below); anything else fails the run so it's visible.
+          if [ "$code" != "0" ] && [ "$code" != "3" ]; then exit "$code"; fi
+      - name: Open or refresh the sync issue
+        if: steps.check.outputs.code == '3'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="Prospect rankings drifted from MLB Pipeline"
+          existing=$(gh issue list --state open --search "in:title \"$title\"" --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body-file report.md
+            echo "Updated issue #$existing"
+          else
+            gh issue create --title "$title" --body-file report.md
+            echo "Opened a new issue"
+          fi
