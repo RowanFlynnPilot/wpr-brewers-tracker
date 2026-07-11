@@ -105,6 +105,9 @@ export const SPONSORS = {
     logo: 'https://wausaupilotandreview.com/wp-content/uploads/2025/07/HCG-W-Logo-1-336x115.jpg',
     url: 'https://www.ho-chunkgaming.com/wittenberg/?utm_source=wausaupilotandreview&utm_medium=widget&utm_campaign=brewers_tracker',
     tagline: '800+ slots · Hotel · Dining — Wittenberg, WI',
+    // Street address powers the banner's "Directions" button (Apple Maps on Apple devices,
+    // Google Maps elsewhere). Omit on a sponsor with no physical destination.
+    address: 'N7198 US-45, Wittenberg, WI 54499',
   },
   // Open inventory. Set to a sponsor object (same shape as above) to fill the slot.
   race: null,
