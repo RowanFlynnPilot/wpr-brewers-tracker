@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, lazy, Suspense } from 'react'
 import { theme } from './theme.js'
-import { SPONSOR_DISCLAIMER, WATCH_PARTY, WPR_NEWS } from './config.js'
+import { SPONSOR_DISCLAIMER, SPONSORS, WPR_NEWS } from './config.js'
 import { fetchStandingsBundle, fetchDivisionSchedules, fetchRosterStats, fetchLeagueLeaders } from './api.js'
 import { lastFinalGame } from './games.js'
 import { initAnalytics, track } from './analytics.js'
@@ -81,7 +81,13 @@ export default function App() {
   // Per-feed failure flags so a failed FIRST load shows an error state instead of an eternal
   // skeleton. Once a feed has data, later failures keep the prior data (flag cleared on success).
   const [errors, setErrors] = useState({})
-  const [tab, setTab] = useState('season')
+  // Tabs are deep-linkable: `?tab=schedule` opens there (so WPR articles — and the sales demo —
+  // can link straight to a section); switching rewrites the param via replaceState, preserving
+  // any other params (like ?demo). No history spam.
+  const [tab, setTab] = useState(() => {
+    const t = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('tab')
+    return TABS.some((x) => x.id === t) ? t : 'season'
+  })
 
   // Refresh on a gentle interval (and on tab focus) so the whole page — not just the hero — stays live.
   const load = useCallback(() => {
@@ -104,7 +110,15 @@ export default function App() {
     return () => { clearInterval(id); document.removeEventListener('visibilitychange', onVisible) }
   }, [load])
 
-  const changeTab = (id) => { setTab(id); track('Tab', { tab: id }); window.scrollTo(0, 0) }
+  const changeTab = (id) => {
+    setTab(id)
+    track('Tab', { tab: id })
+    window.scrollTo(0, 0)
+    const url = new URL(window.location.href)
+    if (id === 'season') url.searchParams.delete('tab') // the default tab keeps a clean URL
+    else url.searchParams.set('tab', id)
+    window.history.replaceState(null, '', url)
+  }
 
   const lastGame = schedules ? lastFinalGame(schedules) : null
   const milestones = roster ? milestoneWatch(roster, leaders) : []
@@ -127,7 +141,8 @@ export default function App() {
             <Section kicker="Season pulse" title="Where things stand"><Pulse standings={standings} lastGame={lastGame} ranks={ranks} error={errors.standings} /></Section>
             {milestones.length > 0 && <Section kicker="On the verge" title="Milestone watch"><MilestoneWatch items={milestones} /></Section>}
             <Section kicker="NL Central" title="The standings"><Standings standings={standings} schedules={schedules} error={errors.standings} /><VsCentral /></Section>
-            <Section kicker="The division race" title="NL Central, day by day">
+            {/* sponsor slot renders only when filled (sold, or ?demo) — undefined hides it entirely */}
+            <Section kicker="The division race" title="NL Central, day by day" sponsor={SPONSORS.race || undefined} slot="race">
               <Suspense fallback={<Loading block />}><Race schedules={schedules} error={errors.schedules} /></Suspense>
             </Section>
             <PlayoffOdds />
@@ -137,20 +152,21 @@ export default function App() {
 
         {tab === 'schedule' && (
           <>
+            {/* The game-day guide leads the tab — prime placement is the product being sold. */}
+            <WhereToWatch />
             <Section kicker="Recent & upcoming" title="The schedule"><Schedule /></Section>
             <HomestandGuide />
             <InjuryReport />
             <RosterMoves />
             {WPR_NEWS && <Coverage />}
             <SponsorBand />
-            {WATCH_PARTY && <Section kicker="Where to watch" title="Catch the games this week"><WhereToWatch venue={WATCH_PARTY} /></Section>}
             <ThisDay />
           </>
         )}
 
         {tab === 'hitters' && (
           <>
-            <Section kicker="At the plate" title="Batting leaders"><Players roster={roster} error={errors.roster} group="hitting" mlbLeaders={leaders} /></Section>
+            <Section kicker="At the plate" title="Batting leaders" sponsor={SPONSORS.leaders || undefined} slot="leaders"><Players roster={roster} error={errors.roster} group="hitting" mlbLeaders={leaders} /></Section>
             <Section kicker="Off the bat" title="Home run tracker"><HomeRuns /></Section>
             <Section kicker="Putting the ball in play" title="Spray chart"><Spray /></Section>
             <Section kicker="Hot or not" title="Hitter form"><HotHitter roster={roster} /></Section>

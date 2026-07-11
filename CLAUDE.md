@@ -56,10 +56,11 @@ MLB Stats API (statsapi.mlb.com) → fetch() in browser → React/Vite → GitHu
   the destination (http/https only — shared `src/embed.js` `destination()`). Clicks fire a
   `Mini Click` event tagged with `widget`. Keep them tiny — no service worker, no recharts.
 - Sections are grouped into tabs in `App.jsx` (`TABS` + `TabBar.jsx`): Season (hero + platoon edge +
-  pulse + milestones + standings/vs-Central + race + playoff odds + road ahead), Schedule (schedule +
-  homestand + injuries + roster moves + coverage + sponsor band + this-day), Hitters (leaders + HR +
-  spray + form), Pitching (leaders + bullpen check + strikeout + arsenal + game flow). Only the
-  active tab renders, so a
+  pulse + milestones + standings/vs-Central + race + playoff odds + road ahead), Schedule (watch
+  guide + schedule + homestand + injuries + roster moves + coverage + sponsor band + this-day),
+  Hitters (leaders + HR + spray + form), Pitching (leaders + bullpen check + strikeout + arsenal +
+  game flow). Tabs are deep-linkable (`?tab=schedule`; switching rewrites the param via
+  replaceState, preserving other params). Only the active tab renders, so a
   tab's heavy season-wide fetches fire only when opened — and `api.js` memoizes those scans
   (`cached()`, short TTL) so flipping back to a tab is instant, not a refetch. Masthead, banner +
   title sponsor, the updated stamp, and the footer stay pinned across all tabs. Tab switches fire a
@@ -81,6 +82,12 @@ MLB Stats API (statsapi.mlb.com) → fetch() in browser → React/Vite → GitHu
     `HomestandGuide`, `Coverage`, `ThisDay` — fail-soft sections that OWN their `Section` chrome:
     on error/empty the heading disappears with the content (never render an orphaned title over
     blank space — follow this pattern for any new fail-soft section).
+  - `WhereToWatch` — the game-day guide: bar/restaurant listings sold PER LISTING from
+    `WATCH_VENUES` in config (empty = no section). SALES DEMO MODE: append `?demo` to any URL
+    and every OPEN sponsor slot (title excluded when sold) + the watch guide fill with "Your
+    Brand Here" placeholders for prospect walkthroughs — implemented at the bottom of
+    `config.js`, browser-only, never visible without the param. Same pattern as the Packers
+    tracker. Demo link for sales: `/?demo&tab=schedule`.
   - `PlayerCard` — tap-any-player modal. One `<PlayerCardHost/>` mounts in App; any surface calls
     the exported `openPlayerCard(id)` (module-level hook, no prop threading). Card data is one
     cached bundle (`fetchPlayerCard`): bio + season line + last-5 log + hitter L/R splits.

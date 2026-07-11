@@ -117,19 +117,23 @@ export const SPONSORS = {
 // Where to send sponsorship inquiries (shown on empty slots — the upsell).
 export const SPONSOR_INQUIRY = 'sales@wausaupilotandreview.com'
 
-// "Where to watch" — a sponsorable listing for a local bar/restaurant showing the games.
-// Hidden until a venue is sold: WATCH_PARTY is null, so the whole section doesn't render.
-// To activate, set WATCH_PARTY to an object with this shape (the venue provides the photo):
+// "Where to watch" — the game-day guide: bar/restaurant listings sold PER LISTING (each card
+// is its own sponsorship). Hidden until at least one venue is sold: an empty list renders no
+// section. Every field is venue-provided; each entry looks like:
 //   {
-//     name: 'The Tap House',                        // venue name
-//     tagline: "Wausau's home for Brewers baseball", // short pitch line
-//     image: 'https://…/venue.jpg',                 // venue-provided photo ('' shows a placeholder)
-//     url: 'https://…',                             // venue website / menu
-//     address: 'Downtown Wausau',
+//     name: 'The Tap House',                          // venue name
+//     tagline: "Wausau's home for Brewers baseball",  // short pitch line
+//     images: ['https://…/bar.jpg', 'https://…/patio.jpg'],  // first is the hero shot, up to
+//                                                     // three more show as thumbnails ([''] or
+//                                                     // [] shows a placeholder block)
+//     url: 'https://…',                               // venue website / menu
+//     address: '312 Third St, Wausau',
+//     phone: '715-555-0140',
 //     features: ['12 HDTVs', 'Sound on for every game', 'Full bar & patio'],
 //     specials: ['$3 Wisconsin taps', '50-cent wings while the Brewers bat'],
 //   }
-export const WATCH_PARTY = null
+// (`let`, not `const`: sales demo mode below fills it with placeholder listings.)
+export let WATCH_VENUES = []
 
 // Shown in the footer when a gaming brand is the title sponsor. Editable; set to '' to hide.
 export const SPONSOR_DISCLAIMER =
@@ -142,4 +146,47 @@ export const SPONSOR_DISCLAIMER =
 export const ANALYTICS = {
   domain: 'rowanflynnpilot.github.io',
   src: 'https://plausible.io/js/script.js',
+}
+
+// ---------------------------------------------------------------------------
+// SALES DEMO MODE — append ?demo to any page URL and every OPEN slot fills with a "Your brand
+// here" placeholder, so WPR sales can show a prospect exactly what their sponsorship looks like
+// on the live page: real scores, their name on the marquee. Sold slots (the Ho-Chunk title) are
+// never overridden, ordinary readers never see it (no ?demo, no placeholders), and nothing here
+// runs outside the browser. Same pattern as the Packers tracker.
+if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('demo')) {
+  const demo = {
+    name: 'Your Brand Here',
+    logo: null,
+    url: null,
+    tagline: `This placement is open for the ${SEASON} season — ${SPONSOR_INQUIRY}`,
+  }
+  SPONSORS.header = SPONSORS.header || demo
+  SPONSORS.race = SPONSORS.race || demo
+  SPONSORS.leaders = SPONSORS.leaders || demo
+  SPONSORS.forecast = SPONSORS.forecast || { name: 'Your Brand Here' }
+  if (!WATCH_VENUES.length) {
+    WATCH_VENUES = [
+      {
+        name: 'Your Bar Here',
+        tagline: "Wausau's home for Brewers baseball — this listing is available",
+        images: [],
+        url: null,
+        address: `Ask about this placement: ${SPONSOR_INQUIRY}`,
+        phone: '',
+        features: ['12 HDTVs', 'Sound on for every game', 'Full bar & patio'],
+        specials: ['$3 Wisconsin taps', '50-cent wings while the Brewers bat'],
+      },
+      {
+        name: 'Your Restaurant Here',
+        tagline: 'The family game-day headquarters — kitchen open through the 9th inning',
+        images: [],
+        url: null,
+        address: `Ask about this placement: ${SPONSOR_INQUIRY}`,
+        phone: '',
+        features: ['Big-screen wall', 'Kids eat free Sundays', 'Patio seating'],
+        specials: ['Brat & tap combo, $9', 'Half-price apps while the Brewers bat'],
+      },
+    ]
+  }
 }
