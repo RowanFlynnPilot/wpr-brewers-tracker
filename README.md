@@ -117,7 +117,8 @@ daily image below instead.
 #### Digest as a daily email image
 
 Email can't run the live widget, so the digest is also published as a static PNG that the deploy
-workflow regenerates **twice a day** (≈6:30 AM & 3:30 PM Central — see `cron` in
+workflow regenerates **three times a day** (≈1 AM overnight failsafe for late West Coast
+finals, 6:30 AM & 3:30 PM Central — see `cron` in
 `.github/workflows/deploy.yml`). It's a headless screenshot of `mini-digest.html`
 (`scripts/render-digest.mjs`), so the image always matches the live card. Drop this into the
 newsletter's HTML (works in every email client) — the image links to the WPR Brewers page:

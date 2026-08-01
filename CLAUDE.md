@@ -25,7 +25,8 @@ built to be hit from browsers. Keeping it client-side is the whole point (simple
 one source of truth, nothing to keep in sync).
 
 TWO sanctioned scheduled jobs exist, and NEITHER is a data cron:
-1. The deploy workflow's twice-daily `schedule` regenerates the **email image** (`digest.png`).
+1. The deploy workflow's `schedule` (3x daily: ~1 AM overnight failsafe for late West Coast
+   finals, ~6:30 AM, ~3:30 PM Central) regenerates the **email image** (`digest.png`).
    Email clients strip iframes and can't run JS, so the digest is snapshotted to a PNG (headless
    screenshot of `mini-digest.html` via `scripts/render-digest.mjs`). This bakes an *image* for
    email; it does NOT cache the widget's data — the tracker still fetches the API live.
@@ -161,7 +162,7 @@ downloads brand fonts at run time) — rerun it only when branding changes.
 
 `digest.png` (the email-newsletter image) is generated in CI by `scripts/render-digest.mjs`
 (Playwright headless screenshot of `mini-digest.html`) and published to the Pages root. It is
-NOT committed — it's built fresh on every deploy and on the twice-daily `schedule` in
+NOT committed — it's built fresh on every deploy and on the thrice-daily `schedule` in
 `deploy.yml`. The newsletter embeds it as `<img src=".../digest.png">` (snippet in README); the
 live data still comes from the browser, this is just the email-safe rendering of the same card.
 
