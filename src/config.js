@@ -61,6 +61,9 @@ export const headshot = (personId) => `https://midfield.mlbstatic.com/v1/people/
 
 // WPR brand assets (the publication's own logo).
 export const WPR_LOGO = 'https://wausaupilotandreview.com/wp-content/uploads/2024/04/WausauPilotandReviewLogo.png'
+// The paper's typewriter press seal (served from public/), shown beside the masthead wordmark
+// and in the footer — the same badge as WPR's other tools (e.g. the Badgers tracker).
+export const WPR_BADGE = `${import.meta.env.BASE_URL}wpr-typewriter-badge.png`
 export const WPR_TAGLINE = 'Where Locals Look First For News'
 export const WPR_URL = 'https://wausaupilotandreview.com/'
 

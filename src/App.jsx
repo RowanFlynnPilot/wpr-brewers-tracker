@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, lazy, Suspense } from 'react'
 import { theme } from './theme.js'
-import { SPONSOR_DISCLAIMER, SPONSORS, WPR_NEWS } from './config.js'
+import { SPONSOR_DISCLAIMER, SPONSORS, WPR_BADGE, WPR_NEWS } from './config.js'
 import { fetchStandingsBundle, fetchDivisionSchedules, fetchRosterStats, fetchLeagueLeaders } from './api.js'
 import { lastFinalGame } from './games.js'
 import { initAnalytics, track } from './analytics.js'
@@ -188,10 +188,13 @@ export default function App() {
         {tab === 'farm' && <ProspectWatch />}
 
         <PlayerCardHost />
-        <footer style={{ borderTop: `1px solid ${theme.rule}`, padding: '22px 0 44px', fontFamily: theme.sans, fontSize: 11, color: theme.muted, lineHeight: 1.6 }}>
-          Data via the MLB Stats API · refreshes live. Not affiliated with or endorsed by Major League Baseball or the Milwaukee Brewers.<br />
-          {SPONSOR_DISCLAIMER && <>{SPONSOR_DISCLAIMER}<br /></>}
-          Wausau Pilot &amp; Review · 715-301-5539
+        <footer style={{ borderTop: `1px solid ${theme.rule}`, padding: '22px 0 44px', display: 'flex', alignItems: 'flex-start', gap: 14, fontFamily: theme.sans, fontSize: 11, color: theme.muted, lineHeight: 1.6 }}>
+          <img src={WPR_BADGE} alt="" width={38} height={38} style={{ flexShrink: 0, objectFit: 'contain', marginTop: 2 }} onError={(e) => { e.currentTarget.style.display = 'none' }} />
+          <div>
+            Data via the MLB Stats API · refreshes live. Not affiliated with or endorsed by Major League Baseball or the Milwaukee Brewers.<br />
+            {SPONSOR_DISCLAIMER && <>{SPONSOR_DISCLAIMER}<br /></>}
+            Wausau Pilot &amp; Review · 715-301-5539
+          </div>
         </footer>
       </div>
     </div>
