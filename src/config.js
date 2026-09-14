@@ -59,8 +59,12 @@ export const teamLogo = (teamId) => `https://www.mlbstatic.com/team-logos/${team
 export const TEAM_LOGO = teamLogo(TEAM_ID)
 export const headshot = (personId) => `https://midfield.mlbstatic.com/v1/people/${personId}/spots/120`
 
-// WPR brand assets (the publication's own logo).
-export const WPR_LOGO = 'https://wausaupilotandreview.com/wp-content/uploads/2024/04/WausauPilotandReviewLogo.png'
+// WPR brand assets — SELF-HOSTED from public/ (like the typewriter badge). WPR migrated its
+// media library to cdn.wausaupilotandreview.com in Sept 2026 and the old wp-content URLs began
+// 404ing (the Ho-Chunk logo and the favicon broke live). Never hot-link brand/sponsor art from
+// the WordPress uploads again; copy it into public/ (source URLs noted for provenance).
+// Wordmark source: wausaupilotandreview.com/wp-content/uploads/2024/04/WausauPilotandReviewLogo.png
+export const WPR_LOGO = `${import.meta.env.BASE_URL}wpr-wordmark.png`
 // The paper's typewriter press seal (served from public/), shown beside the masthead wordmark
 // and in the footer — the same badge as WPR's other tools (e.g. the Badgers tracker).
 export const WPR_BADGE = `${import.meta.env.BASE_URL}wpr-typewriter-badge.png`
@@ -105,7 +109,10 @@ export const SPONSORS = {
   // Title sponsor — Ho-Chunk Gaming Wittenberg, current sponsor of WPR's Brewers content.
   header: {
     name: 'Ho-Chunk Gaming Wittenberg',
-    logo: 'https://wausaupilotandreview.com/wp-content/uploads/2025/07/HCG-W-Logo-1-336x115.jpg',
+    // Self-hosted (see the WPR brand assets note above — the original WordPress upload URL
+    // 404'd after the Sept 2026 media migration).
+    // Source: cdn.wausaupilotandreview.com/wp-content/uploads/2025/07/HCG-W-Logo-1-336x115.jpg
+    logo: `${import.meta.env.BASE_URL}hcg-wittenberg-logo.jpg`,
     url: 'https://www.ho-chunkgaming.com/wittenberg/?utm_source=wausaupilotandreview&utm_medium=widget&utm_campaign=brewers_tracker',
     tagline: '800+ slots · Hotel · Dining — Wittenberg, WI',
     // Street address powers the banner's "Directions" button (Apple Maps on Apple devices,

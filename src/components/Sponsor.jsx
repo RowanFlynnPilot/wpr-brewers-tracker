@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { theme } from '../theme.js'
 import { SPONSOR_INQUIRY } from '../config.js'
 import { track } from '../analytics.js'
@@ -7,6 +8,10 @@ import { track } from '../analytics.js'
 // `slot` labels the placement (banner/hero/race/leaders) for per-slot click reporting.
 // `fullWidth` stretches the lockup across its container (the banner) as a horizontal bar.
 export default function Sponsor({ sponsor, variant = 'light', compact = false, fullWidth = false, slot }) {
+  // If the logo file ever 404s (a WPR media migration broke a hot-linked one in Sept 2026),
+  // fall back to the sponsor's name in serif — a paid placement must never show a broken image.
+  const [logoFailed, setLogoFailed] = useState(false)
+  const showLogo = sponsor?.logo && !logoFailed
   const dark = variant === 'dark'
   const labelColor = dark ? '#cdd6e3' : theme.muted
   const nameColor = dark ? '#fff' : theme.ink
@@ -94,8 +99,8 @@ export default function Sponsor({ sponsor, variant = 'light', compact = false, f
       >
         <div style={{ fontFamily: theme.sans, fontSize: 9.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: theme.gold, fontWeight: 700 }}>Presented by</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap', marginTop: 6 }}>
-          {sponsor.logo ? (
-            <img src={sponsor.logo} alt={sponsor.name} style={{ display: 'block', height: 50, objectFit: 'contain' }} />
+          {showLogo ? (
+            <img src={sponsor.logo} alt={sponsor.name} style={{ display: 'block', height: 50, objectFit: 'contain' }} onError={() => setLogoFailed(true)} />
           ) : (
             <div style={{ fontFamily: theme.serif, fontSize: 20, color: theme.ink }}>{sponsor.name}</div>
           )}
@@ -130,8 +135,8 @@ export default function Sponsor({ sponsor, variant = 'light', compact = false, f
       }}
     >
       <div style={{ fontFamily: theme.sans, fontSize: 9.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: theme.gold, fontWeight: 700 }}>Presented by</div>
-      {sponsor.logo ? (
-        <img src={sponsor.logo} alt={sponsor.name} style={{ display: 'block', height: 50, objectFit: 'contain', margin: '8px 0 2px' }} />
+      {showLogo ? (
+        <img src={sponsor.logo} alt={sponsor.name} style={{ display: 'block', height: 50, objectFit: 'contain', margin: '8px 0 2px' }} onError={() => setLogoFailed(true)} />
       ) : (
         <div style={{ fontFamily: theme.serif, fontSize: 20, color: theme.ink, margin: '6px 0 2px' }}>{sponsor.name}</div>
       )}
