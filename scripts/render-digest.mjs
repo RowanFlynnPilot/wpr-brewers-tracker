@@ -29,18 +29,40 @@ try {
     viewport: { width: 480, height: 1000 },
     locale: 'en-US',
     timezoneId: 'America/Chicago',
+    // ESPN (Akamai) started 403ing any request that admits to being HeadlessChrome in Aug 2026 —
+    // it blanked the sibling Badgers digest (2026-08-16). MLB's statsapi/mlbstatic don't block
+    // headless today (verified 2026-08-18), but this script is the shared template across the WPR
+    // trackers and the masked headers cost nothing. Keep the version roughly current with
+    // Playwright's bundled Chromium.
+    userAgent:
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36',
   })
+  // Chromium brands sec-ch-ua "HeadlessChrome" even when the UA string is overridden — the client
+  // hint has to be masked separately or UA-keyed blocks still fire.
+  await page.setExtraHTTPHeaders({ 'sec-ch-ua': '"Chromium";v="149", "Not)A;Brand";v="24"' })
   await page.goto(url, { waitUntil: 'load', timeout: 60000 })
 
-  // Wait for real data: the standings table always populates; the two game sections appear
-  // mid-season. Best-effort on the game headings so an off-day never fails the whole render.
-  await page.waitForSelector('.mini-card table tbody tr', { timeout: 60000 })
-  await page
-    .waitForFunction(() => {
-      const t = document.querySelector('.mini-card')?.innerText || ''
-      return t.includes('LAST GAME') && t.includes('NEXT UP') && t.includes('NL CENTRAL')
-    }, { timeout: 30000 })
-    .catch(() => console.warn('Proceeding without all three sections (likely an off-day).'))
+  // Wait for real data — a degraded card must NEVER ship to the newsletter (the sibling Badgers
+  // tracker baked an empty one once, 2026-08-16). Fail loudly instead: the workflow then
+  // re-publishes the last good digest.png. Two gates, each with a 150s window so it spans one of
+  // the page's own 120s retry polls:
+  //   1. the standings table has rows — the MLB standings feed answered;
+  //   2. the game sections are settled — MiniDigest's data-games attribute distinguishes
+  //      "schedule feed answered, no games in its ±12-day window" ('none': the offseason
+  //      standings-only card, fine to ship — these crons run year-round) from "feed hasn't
+  //      answered yet" (absent: keep waiting, and time out the render rather than screenshot).
+  // NB: waitForFunction's options ride THIRD (second is the page-function arg) — passing
+  // {timeout} second silently keeps the 30s default.
+  await page.waitForSelector('.mini-card table tbody tr', { timeout: 150000 })
+  await page.waitForFunction(
+    () => {
+      const card = document.querySelector('.mini-card')
+      if (card?.dataset.games === 'none') return true
+      return /LAST GAME|NEXT UP/.test(card?.innerText || '')
+    },
+    null,
+    { timeout: 150000 },
+  )
 
   // Let the trailing pitcher-line fetches (records/ERA) settle, and ensure web fonts + the
   // logos/headshots have painted so nothing renders in a fallback font or half-loaded.

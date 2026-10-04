@@ -249,8 +249,12 @@ export default function MiniDigest() {
     )
   }
 
+  // data-games is read by scripts/render-digest.mjs: absent = the schedule feed hasn't answered
+  // (the bake must not screenshot yet), 'none' = it answered with no games in its ±12-day window
+  // (the offseason standings-only card is legit), 'shown' = the game sections rendered.
   return (
-    <a {...linkProps} className="mini-card" style={card}>
+    <a {...linkProps} className="mini-card" style={card}
+      data-games={games ? (last || next ? 'shown' : 'none') : undefined}>
       {band}
       {lastBlock}
       {nextBlock}

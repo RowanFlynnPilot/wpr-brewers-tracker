@@ -41,6 +41,8 @@ jobs:
       # Render the digest widget to dist/digest.png for the email newsletter (see header note).
       - run: npx playwright install --with-deps chromium
       - name: Render digest email image
+        id: digest
+        continue-on-error: true
         run: |
           npm run preview -- --port 4173 --host 127.0.0.1 &
           for i in $(seq 1 30); do
@@ -48,6 +50,13 @@ jobs:
             sleep 1
           done
           node scripts/render-digest.mjs http://127.0.0.1:4173/wpr-brewers-tracker/mini-digest.html dist/digest.png
+      # A failed render (MLB API unreachable from CI → the script refuses to bake a degraded card)
+      # must neither block the deploy nor blank the newsletter image — carry the last published
+      # digest forward instead.
+      - name: Keep last good digest on render failure
+        if: steps.digest.outcome == 'failure'
+        run: |
+          curl -fsS -o dist/digest.png https://rowanflynnpilot.github.io/wpr-brewers-tracker/digest.png || true
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -165,6 +165,14 @@ downloads brand fonts at run time) — rerun it only when branding changes.
 NOT committed — it's built fresh on every deploy and on the thrice-daily `schedule` in
 `deploy.yml`. The newsletter embeds it as `<img src=".../digest.png">` (snippet in README); the
 live data still comes from the browser, this is just the email-safe rendering of the same card.
+The render **fails loudly rather than bake a degraded card** (the sibling Badgers tracker shipped
+a blank one, 2026-08-16): the script masks the HeadlessChrome fingerprint (UA string + `sec-ch-ua`
+client hint — ESPN/Akamai 403s it; MLB doesn't yet, but this script is the shared template) and
+hard-waits on real data, using `MiniDigest`'s `data-games` attribute to tell an offseason
+standings-only card (legit — the crons run year-round) from a stalled schedule feed (fail). On
+render failure, `deploy.yml` re-publishes the last good `digest.png` instead of blocking the
+deploy. Beware `waitForFunction(fn, arg, opts)` — options ride THIRD; `{timeout}` passed second
+is silently ignored.
 
 ## Third external API (deliberate, not drift)
 
