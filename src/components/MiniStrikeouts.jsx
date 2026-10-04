@@ -94,7 +94,7 @@ export default function MiniStrikeouts() {
       {band}
       <div style={{ padding: '9px 14px 4px' }}>
         <div style={{ fontSize: 10, letterSpacing: '0.12em', fontWeight: 700, color: theme.muted, textTransform: 'uppercase' }}>
-          {dateLabel} {game.home ? 'vs' : '@'} {game.oppName}
+          {dateLabel} {game.home ? 'vs' : '@'} {game.oppName}{game.label ? ` · ${game.label}` : ''}
         </div>
         <div style={{ fontFamily: theme.serif, fontSize: 19, color: theme.ink, marginTop: 2 }}>
           {pitcher.name} · <span style={{ color: theme.navy, fontWeight: 700 }}>{ks.length} K</span>

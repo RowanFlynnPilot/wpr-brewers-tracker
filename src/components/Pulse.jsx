@@ -32,8 +32,8 @@ const ord = (n) => { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n +
 
 // Receives shared standings from App (single fetch feeds Pulse + Standings); lastGame is derived
 // from the division schedules in App. Layout: a tight marquee row, a compact secondary strip,
-// then a short narrative.
-export default function Pulse({ standings, lastGame, ranks, error }) {
+// then a short narrative. Once `seasonOver`, the pace talk becomes the final tally.
+export default function Pulse({ standings, lastGame, ranks, seasonOver, error }) {
   const narrow = useIsNarrow()
   // Decide the animation once, before any early return can reorder hooks-free logic below.
   const animate = !pulseAnimated && typeof window !== 'undefined' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -65,7 +65,7 @@ export default function Pulse({ standings, lastGame, ranks, error }) {
       : luck > 0
       ? `They're ${w(luck)} ahead of what run differential predicts (${rec(xToDate)}) — outperforming the underlying numbers.`
       : `Their record matches run differential to the win (${rec(xToDate)}).`) +
-      (xSeason ? ` At this rate they're on a ${xSeason.wins}-win pace.` : '')
+      (xSeason && !seasonOver ? ` At this rate they're on a ${xSeason.wins}-win pace.` : '')
 
   // Marquee stats — boxed stat tiles. Run diff / streak / lead are color-coded (navy good, red bad).
   const cell = (value, label, color = theme.ink) => (
@@ -119,15 +119,16 @@ export default function Pulse({ standings, lastGame, ranks, error }) {
       {lastGame && (
         <div style={{ fontFamily: theme.sans, fontSize: 13, color: theme.muted, marginTop: 14 }}>
           <span style={{ fontWeight: 700, color: lastGame.won ? theme.navy : theme.red }}>{lastGame.won ? 'W' : 'L'}</span>
-          {' '}Latest: {lastGame.won ? 'beat' : 'lost to'} {lastGame.oppName} {lastGame.me}{DASH}{lastGame.opp} {lastGame.home ? 'at home' : 'on the road'}.
+          {' '}Latest: {lastGame.won ? 'beat' : 'lost to'} {lastGame.oppName} {lastGame.me}{DASH}{lastGame.opp} {lastGame.home ? 'at home' : 'on the road'}{lastGame.label ? ` in ${lastGame.label}` : ''}.
         </div>
       )}
 
       {note && <div style={{ fontFamily: theme.sans, fontSize: 13, color: theme.muted, marginTop: 8, lineHeight: 1.55, maxWidth: 620 }}>{note}</div>}
 
-      {/* Pace vs the franchise-best season — Wisconsin-pride bait when the club is rolling. */}
-      {xSeason && (() => {
-        const pace = xSeason.wins
+      {/* Pace vs the franchise-best season — Wisconsin-pride bait when the club is rolling. Once
+          the regular season is over it's the actual final win total, not a projection. */}
+      {(xSeason || seasonOver) && (() => {
+        const pace = seasonOver ? me.wins : xSeason.wins
         const best = FRANCHISE_BEST
         const scaleMax = Math.max(110, pace + 4, best.wins + 4)
         const pct = (v) => `${(v / scaleMax) * 100}%`
@@ -135,14 +136,18 @@ export default function Pulse({ standings, lastGame, ranks, error }) {
         return (
           <div style={{ marginTop: 18, maxWidth: 620 }}>
             <div style={{ fontFamily: theme.sans, fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: theme.muted, marginBottom: 7 }}>
-              Win pace vs franchise best
+              {seasonOver ? 'Final win total vs franchise best' : 'Win pace vs franchise best'}
             </div>
             <div style={{ position: 'relative', height: 10, borderRadius: 5, background: theme.rule }}>
               <div style={{ width: pct(pace), height: '100%', borderRadius: 5, background: chasing ? theme.gold : theme.navy, transition: 'width 0.6s ease' }} />
               <div style={{ position: 'absolute', left: pct(best.wins), top: -4, width: 2, height: 18, background: theme.ink }} />
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: theme.sans, fontSize: 11.5, marginTop: 5 }}>
-              <span style={{ color: theme.navy, fontWeight: 700 }}>On pace for {pace} wins{chasing ? ' — a franchise record' : ''}</span>
+              <span style={{ color: theme.navy, fontWeight: 700 }}>
+                {seasonOver
+                  ? `${pace} wins${pace > best.wins ? ' — a franchise record' : pace === best.wins ? ' — tied the franchise record' : ''}`
+                  : `On pace for ${pace} wins${chasing ? ' — a franchise record' : ''}`}
+              </span>
               <span style={{ color: theme.muted }}>Best: {best.wins} ({best.year})</span>
             </div>
           </div>

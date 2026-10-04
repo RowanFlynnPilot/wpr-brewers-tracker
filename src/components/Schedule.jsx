@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { theme } from '../theme.js'
 import { TEAM_ID } from '../config.js'
 import { fetchTeamSchedule } from '../api.js'
-import { seriesSummary } from '../games.js'
+import { seriesSummary, isPostseason, roundName } from '../games.js'
 import { Loading, ErrorState } from './Status.jsx'
 import TeamLogo from './TeamLogo.jsx'
 import PitcherLine from './PitcherLine.jsx'
@@ -51,6 +51,9 @@ export default function Schedule() {
         const probable = game.teams[home ? 'home' : 'away'].probablePitcher
         const won = final && myScore > oppScore
         const label = new Date(date + 'T12:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+        // October cards name the round ("NLDS Gm 4"); unneeded games are flagged until MLB drops them.
+        const round = isPostseason(game) ? `${roundName(game)} Gm ${game.seriesGameNumber}` : null
+        const ifNecessary = game.ifNecessary === 'Y'
         const openable = final || live
         const open = () => openable && setOpenGame({ gamePk: game.gamePk, label })
         return (
@@ -63,7 +66,7 @@ export default function Schedule() {
             tabIndex={openable ? 0 : undefined}
           >
             <div style={{ fontFamily: theme.sans, fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: live ? theme.gold : theme.muted }}>
-              {label}{live && ' \u2022 LIVE'}
+              {label}{round && ` \u00b7 ${round}`}{live && ' \u2022 LIVE'}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 5 }}>
               <TeamLogo id={oppTeam.id} size={22} />
@@ -80,7 +83,7 @@ export default function Schedule() {
             ) : probable ? (
               <PitcherLine personId={probable.id} fullName={probable.fullName} />
             ) : (
-              <div style={{ fontFamily: theme.sans, fontSize: 12, color: theme.muted, marginTop: 5 }}>Probable TBA</div>
+              <div style={{ fontFamily: theme.sans, fontSize: 12, color: theme.muted, marginTop: 5 }}>{ifNecessary ? 'If necessary' : 'Probable TBA'}</div>
             )}
           </div>
         )

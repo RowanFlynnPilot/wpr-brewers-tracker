@@ -28,29 +28,67 @@ export function parksEstimate(hr) {
   return Math.max(1, count) // it cleared at least the park it was hit in
 }
 
-// A team's completed regular-season games in date order, each flagged won/lost with the score
-// + opponent. abstractGameState (not detailedState) so "Game Over"/"Completed Early" count too;
-// gameType 'R' so spring-training results never leak into recaps or form.
-function finals(dates, teamId) {
+// Postseason game types: 'F' wild card series, 'D' division series, 'L' LCS, 'W' World Series.
+// Anything game-centric (last result, next game, game pickers, calendar) must count these along
+// with 'R' — filtering to 'R' alone froze the tracker on the regular-season finale in October.
+// Spring training ('S'), exhibitions ('E') and the All-Star Game ('A') stay out.
+const POSTSEASON_TYPES = ['F', 'D', 'L', 'W']
+export const isPostseason = (g) => POSTSEASON_TYPES.includes(g.gameType)
+export const isRegularOrPost = (g) => g.gameType === 'R' || isPostseason(g)
+
+// Short round name from the API's seriesDescription: "NL Division Series" → "NLDS",
+// "NL Championship Series" → "NLCS"; "NL Wild Card Series" / "World Series" read fine as-is.
+export const roundName = (g) => (g.seriesDescription || '').replace(/^([AN]L) ([DC])\w+ Series$/, '$1$2S')
+
+// "NLDS Game 2" for a postseason game; null in the regular season.
+export const postseasonLabel = (g) => (isPostseason(g) && g.seriesGameNumber ? `${roundName(g)} Game ${g.seriesGameNumber}` : null)
+
+// Where a postseason series stands, from any game in it: in October the schedule's leagueRecord
+// IS the series record (verified 2025 + 2026 — a preview carries the record coming in, a final
+// includes its own result). → { text: 'Brewers lead the NLDS 1–0', over: false }, or null at 0–0
+// / outside the postseason.
+export function postseasonSeries(g) {
+  if (!isPostseason(g)) return null
+  const home = g.teams.home.team.id === TEAM_ID
+  const me = g.teams[home ? 'home' : 'away']
+  const opp = g.teams[home ? 'away' : 'home']
+  const w = me.leagueRecord?.wins, l = me.leagueRecord?.losses
+  if (w == null || l == null || w + l === 0) return null
+  const round = roundName(g)
+  const need = Math.ceil((g.gamesInSeries || 0) / 2)
+  if (need && w >= need) return { text: `Brewers win the ${round} ${w}–${l}`, over: true }
+  if (need && l >= need) return { text: `${opp.team.teamName || opp.team.name} win the ${round} ${l}–${w}`, over: true }
+  return { text: w === l ? `${round} tied ${w}–${l}` : `Brewers ${w > l ? 'lead' : 'trail'} the ${round} ${w}–${l}`, over: false }
+}
+
+// An unplayed postseason game in a series that's already decided (Game 5 after a 3–1 finish).
+// MLB drops these from the schedule, but not instantly — never feature or list one as upcoming.
+export const isMoot = (g) => g.status?.abstractGameState === 'Preview' && !!postseasonSeries(g)?.over
+
+// A team's completed games in date order, each flagged won/lost with the score + opponent.
+// abstractGameState (not detailedState) so "Game Over"/"Completed Early" count too. Regular
+// season only unless `post` — the standings form strip is a regular-season stat; the pulse
+// recap line wants October too (`label` names the round, e.g. "NLDS Game 1").
+function finals(dates, teamId, post = false) {
   const out = []
   dates.forEach((day) =>
     day.games.forEach((g) => {
-      if (g.status.abstractGameState !== 'Final' || g.gameType !== 'R') return
+      if (g.status.abstractGameState !== 'Final' || !(g.gameType === 'R' || (post && isPostseason(g)))) return
       const home = g.teams.home.team.id === teamId
       const me = home ? g.teams.home : g.teams.away
       const opp = home ? g.teams.away : g.teams.home
       if (me.score == null || opp.score == null) return
-      out.push({ date: day.date, won: me.score > opp.score, me: me.score, opp: opp.score, oppName: opp.team.name.replace('Milwaukee ', ''), home })
+      out.push({ date: day.date, won: me.score > opp.score, me: me.score, opp: opp.score, oppName: opp.team.name.replace('Milwaukee ', ''), home, label: postseasonLabel(g) })
     })
   )
   return out
 }
 
-// The home team's most recent completed game, summarized for the pulse recap line.
+// The home team's most recent completed game (postseason included), for the pulse recap line.
 export function lastFinalGame(schedules) {
   const mine = schedules.find((s) => s.id === TEAM_ID)
   if (!mine) return null
-  const fs = finals(mine.dates, TEAM_ID)
+  const fs = finals(mine.dates, TEAM_ID, true)
   return fs.length ? fs[fs.length - 1] : null
 }
 
@@ -272,22 +310,32 @@ export function liveMatchupLines(box, batterId, pitcherId) {
 
 // Series framing over the team-schedule feed ({date, game} rows): short lines for the last
 // completed series and the one in progress, e.g. "Won 2 of 3 vs the Cubs" · "Up 1–0 on the
-// Athletics". Series whose first game falls outside the window are skipped (can't score them).
+// Athletics". Regular-season series whose first game falls outside the window are skipped (can't
+// score them); postseason series carry their own running record, so they always frame.
 export function seriesSummary(rows) {
   const groups = []
   rows.forEach(({ game }) => {
-    if (game.gameType !== 'R') return
+    if (!isRegularOrPost(game)) return
     const home = game.teams.home.team.id === TEAM_ID
     const opp = (home ? game.teams.away : game.teams.home).team
     const last = groups[groups.length - 1]
-    if (last && last.oppId === opp.id) last.games.push(game)
+    // Same opponent AND same game type — a wild card series right after a season-ending set
+    // against the same club is a new series.
+    if (last && last.oppId === opp.id && last.type === game.gameType) last.games.push(game)
     // teamName is the short club name ("Cubs") — present because the schedule hydrates team.
-    else groups.push({ oppId: opp.id, oppName: opp.teamName || opp.name.replace('Milwaukee ', ''), games: [game] })
+    else groups.push({ oppId: opp.id, oppName: opp.teamName || opp.name.replace('Milwaukee ', ''), type: game.gameType, games: [game] })
   })
 
   let lastDone = null
   let current = null
+  let postDone = null
+  let postCurrent = null
   groups.forEach((grp) => {
+    if (isPostseason(grp.games[0])) {
+      const s = postseasonSeries(grp.games[grp.games.length - 1])
+      if (s) { if (s.over) postDone = s.text; else postCurrent = s.text }
+      return
+    }
     if (grp.games[0].seriesGameNumber !== 1) return
     const total = grp.games[0].gamesInSeries || grp.games.length
     let w = 0, l = 0
@@ -304,6 +352,9 @@ export function seriesSummary(rows) {
     if (w + l === total) lastDone = item
     else current = item
   })
+
+  // October supersedes the regular-season framing.
+  if (postDone || postCurrent) return [postDone, postCurrent].filter(Boolean)
 
   const lines = []
   if (lastDone) {

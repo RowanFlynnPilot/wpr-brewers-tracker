@@ -117,8 +117,8 @@ daily image below instead.
 #### Digest as a daily email image
 
 Email can't run the live widget, so the digest is also published as a static PNG that the deploy
-workflow regenerates **three times a day** (≈1 AM overnight failsafe for late West Coast
-finals, 6:30 AM & 3:30 PM Central — see `cron` in
+workflow regenerates **four times a day** (≈1:15 AM and ≈3:45 AM overnight passes for late
+West Coast finals, 6:45 AM & 3:45 PM Central — see `cron` in
 `.github/workflows/deploy.yml`). It's a headless screenshot of `mini-digest.html`
 (`scripts/render-digest.mjs`), so the image always matches the live card. Drop this into the
 newsletter's HTML (works in every email client) — the image links to the WPR Brewers page:
@@ -138,7 +138,8 @@ newsletter's HTML (works in every email client) — the image links to the WPR B
 The image itself is also linked (tapping it opens the tracker), but the text link below makes the
 call-to-action obvious — the image no longer bakes in a "Full tracker" button, since a region
 inside an image can't carry its own link. The PNG is ~840px wide (2× for retina), so it stays
-sharp displayed up to 600px. To change the refresh times, edit the two `cron` lines in the workflow.
+sharp displayed up to 600px. To change the refresh times, edit the `cron` lines in the workflow (keep them off :00/:30 —
+GitHub delays scheduled runs at the top and half of the hour).
 
 Each mini is its own Plausible page (`/mini-standings.html`, `/mini-strikeouts.html`,
 `/mini-digest.html`); clicks fire a `Mini Click` event tagged with the `widget`

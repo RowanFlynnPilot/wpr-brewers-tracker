@@ -1,6 +1,7 @@
-// Build an iCalendar (.ics) feed of the Brewers' remaining regular-season games — client-side,
-// from the MLB schedule. Importable into Apple/Google/Outlook calendars.
+// Build an iCalendar (.ics) feed of the Brewers' remaining games (regular season + postseason) —
+// client-side, from the MLB schedule. Importable into Apple/Google/Outlook calendars.
 import { TEAM_ID, SPONSORS, SITE_URL } from './config.js'
+import { isRegularOrPost, postseasonLabel } from './games.js'
 
 const pad = (n) => String(n).padStart(2, '0')
 const toICS = (iso) => {
@@ -20,12 +21,15 @@ export function buildICS(games, nowISO) {
     'X-WR-CALNAME:Milwaukee Brewers',
   ]
   games.forEach((g) => {
-    if (g.gameType !== 'R' || !g.gameDate) return
+    if (!isRegularOrPost(g) || !g.gameDate) return
     const home = g.teams.home.team.id === TEAM_ID
     const opp = (home ? g.teams.away : g.teams.home).team.name
     const start = toICS(g.gameDate)
     const end = toICS(new Date(new Date(g.gameDate).getTime() + 3 * 3600 * 1000).toISOString())
-    const summary = home ? `Brewers vs ${opp}` : `Brewers @ ${opp}`
+    // Postseason: "NLDS Game 4 (if necessary): Brewers @ San Diego Padres". The UID is the gamePk,
+    // so re-importing later updates these events rather than duplicating them.
+    const round = postseasonLabel(g)
+    const summary = `${round ? `${round}${g.ifNecessary === 'Y' ? ' (if necessary)' : ''}: ` : ''}${home ? `Brewers vs ${opp}` : `Brewers @ ${opp}`}`
     lines.push(
       'BEGIN:VEVENT',
       `UID:${g.gamePk}@wpr-brewers-tracker`,

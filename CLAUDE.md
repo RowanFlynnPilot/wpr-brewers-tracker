@@ -25,8 +25,9 @@ built to be hit from browsers. Keeping it client-side is the whole point (simple
 one source of truth, nothing to keep in sync).
 
 TWO sanctioned scheduled jobs exist, and NEITHER is a data cron:
-1. The deploy workflow's `schedule` (3x daily: ~1 AM overnight failsafe for late West Coast
-   finals, ~6:30 AM, ~3:30 PM Central) regenerates the **email image** (`digest.png`).
+1. The deploy workflow's `schedule` (4x daily: ~1:15 AM + ~3:45 AM overnight passes for late
+   West Coast finals, ~6:45 AM, ~3:45 PM Central — odd minutes, because GitHub delays/drops
+   top-of-hour schedules) regenerates the **email image** (`digest.png`).
    Email clients strip iframes and can't run JS, so the digest is snapshotted to a PNG (headless
    screenshot of `mini-digest.html` via `scripts/render-digest.mjs`). This bakes an *image* for
    email; it does NOT cache the widget's data — the tracker still fetches the API live.
@@ -120,6 +121,14 @@ MLB Stats API (statsapi.mlb.com) → fetch() in browser → React/Vite → GitHu
   `/teams/158/roster?rosterType=active&hydrate=person(stats(type=season,season=2026))`.
 - Do NOT use `/teams/{id}/leaders` — it mixes career and season values. Compute leaders
   from the hydrated roster (see `Players.jsx`).
+- **Postseason (verified Oct 2026):** playoff games are `gameType` `F` (wild card) / `D` / `L` /
+  `W`, NOT `'R'`. Anything game-centric — last/next game, the digest, stat-lab pickers, bullpen
+  check, calendar — must use `isRegularOrPost()` from `games.js` (a bare `=== 'R'` froze the
+  digest on the regular-season finale after NLDS Game 1). Season aggregates (race, form strip,
+  vs-Central, season series, spray chart) stay regular-season (`!g.post`). In October the
+  schedule's `teams.*.leagueRecord` IS the series record → `postseasonSeries()` ("Brewers lead
+  the NLDS 1–0"). `fetchRegularSeasonOver()` (MLB `/seasons` calendar) stands down the pace
+  modules: playoff odds + milestone watch hide, the pulse pace bar becomes the final win total.
 - Logos: `https://www.mlbstatic.com/team-logos/{teamId}.svg`.
   Headshots: `https://midfield.mlbstatic.com/v1/people/{personId}/spots/120`.
 - "This day in history" (`ThisDay.jsx`) intentionally fires one small schedule request per season
@@ -162,7 +171,7 @@ downloads brand fonts at run time) — rerun it only when branding changes.
 
 `digest.png` (the email-newsletter image) is generated in CI by `scripts/render-digest.mjs`
 (Playwright headless screenshot of `mini-digest.html`) and published to the Pages root. It is
-NOT committed — it's built fresh on every deploy and on the thrice-daily `schedule` in
+NOT committed — it's built fresh on every deploy and on the four-times-daily `schedule` in
 `deploy.yml`. The newsletter embeds it as `<img src=".../digest.png">` (snippet in README); the
 live data still comes from the browser, this is just the email-safe rendering of the same card.
 The render **fails loudly rather than bake a degraded card** (the sibling Badgers tracker shipped

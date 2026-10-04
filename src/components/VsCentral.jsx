@@ -15,7 +15,7 @@ export default function VsCentral() {
       if (!alive) return
       const byOpp = {}
       finals.forEach((f) => {
-        if (!DIVISION[f.oppId] || f.oppId === TEAM_ID) return
+        if (f.post || !DIVISION[f.oppId] || f.oppId === TEAM_ID) return
         const r = byOpp[f.oppId] || (byOpp[f.oppId] = { w: 0, l: 0 })
         if (f.me > f.them) r.w++; else r.l++
       })

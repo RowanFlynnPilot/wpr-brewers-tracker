@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { theme } from '../theme.js'
 import { TEAM_ID, DIVISION, SPONSORS, headshot } from '../config.js'
 import { fetchDigestGames, fetchStandingsBundle, fetchPitcherSeason } from '../api.js'
+import { isPostseason, postseasonLabel, postseasonSeries } from '../games.js'
 import { track } from '../analytics.js'
 import { destination } from '../embed.js'
 import TeamLogo from './TeamLogo.jsx'
@@ -48,17 +49,19 @@ export default function MiniDigest() {
   const next = games?.next
   const winId = last?.decisions?.winner?.id
   const lossId = last?.decisions?.loser?.id
+  const lastPost = !!last && isPostseason(last)
   const nextPk = next?.gamePk
 
-  // Pull season lines for the last game's W/L pitchers (records + ERA), keyed off their ids.
+  // Pull season lines for the last game's W/L pitchers (records + ERA), keyed off their ids —
+  // the postseason line after a playoff game ("W Hall 1-0, 0.00"), like a broadcast would.
   useEffect(() => {
     setDecision(null)
     if (!winId || !lossId) return
     let alive = true
-    Promise.all([fetchPitcherSeason(winId).catch(() => null), fetchPitcherSeason(lossId).catch(() => null)])
+    Promise.all([fetchPitcherSeason(winId, lastPost).catch(() => null), fetchPitcherSeason(lossId, lastPost).catch(() => null)])
       .then(([win, loss]) => { if (alive) setDecision({ win, loss }) })
     return () => { alive = false }
-  }, [winId, lossId])
+  }, [winId, lossId, lastPost])
 
   // Pull season lines for the next game's probables (Brewers' first).
   useEffect(() => {
@@ -131,6 +134,8 @@ export default function MiniDigest() {
     const winTeam = homeWon ? last.teams.home.team : last.teams.away.team
     const lossTeam = homeWon ? last.teams.away.team : last.teams.home.team
     const d = last.decisions || {}
+    const round = postseasonLabel(last)
+    const seriesLine = postseasonSeries(last)?.text
 
     const DecRow = ({ tag, color, pitcher, team, stat }) => !pitcher ? null : (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, fontSize: 11, marginTop: 5 }}>
@@ -147,7 +152,7 @@ export default function MiniDigest() {
 
     lastBlock = (
       <div style={{ padding: '11px 14px' }}>
-        {heading(`Last game · ${fmtDay(last.gameDate)}`)}
+        {heading(`Last game · ${round ? `${round} · ` : ''}${fmtDay(last.gameDate)}`)}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
             <TeamLogo id={me.team.id} size={22} />
@@ -163,6 +168,9 @@ export default function MiniDigest() {
             <TeamLogo id={opp.team.id} size={22} />
           </span>
         </div>
+        {seriesLine && (
+          <div style={{ textAlign: 'center', fontSize: 11.5, fontWeight: 700, color: theme.navy, marginTop: 6 }}>{seriesLine}</div>
+        )}
         <div style={{ marginTop: 8 }}>
           <DecRow tag="W" color={theme.navy} pitcher={d.winner} team={winTeam} stat={decision?.win} />
           <DecRow tag="L" color={theme.red} pitcher={d.loser} team={lossTeam} stat={decision?.loss} />
@@ -185,9 +193,10 @@ export default function MiniDigest() {
     const oppName = opp.team.teamName || opp.team.name.replace('Milwaukee ', '')
     const mp = me.probablePitcher
     const op = opp.probablePitcher
+    const round = postseasonLabel(next)
     nextBlock = (
       <div style={section}>
-        {heading(`Next up · ${fmtDay(next.gameDate)} · ${fmtTime(next.gameDate)}`)}
+        {heading(`Next up · ${round ? `${round} · ` : ''}${fmtDay(next.gameDate)} · ${fmtTime(next.gameDate)}`)}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: theme.serif, fontSize: 14, color: theme.ink }}>
           <TeamLogo id={me.team.id} size={20} />
           <span style={{ fontWeight: 700, color: theme.navy }}>Brewers</span>

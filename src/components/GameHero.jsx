@@ -3,6 +3,7 @@ import { theme } from '../theme.js'
 import { TEAM_ID, SPONSORS, SITE_URL } from '../config.js'
 import { fetchFeaturedGame, fetchLiveExtras, fetchSeasonFinals, fetchTeamContext } from '../api.js'
 import { fetchFirstPitchForecast } from '../weather.js'
+import { isPostseason, roundName, postseasonLabel, postseasonSeries } from '../games.js'
 import { track } from '../analytics.js'
 import { useIsNarrow } from '../useIsNarrow.js'
 import Sponsor from './Sponsor.jsx'
@@ -168,8 +169,9 @@ export default function GameHero() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- game object churns every poll; pk+state pin the fetch
   }, [gamePk, gameState])
 
-  // Matchup context: the season series vs this opponent (from the cached season finals) and,
-  // for upcoming games, the opponent's current form (cached all-MLB standings). Both fail-soft.
+  // Matchup context: the season series vs this opponent (from the cached season finals — regular
+  // season only; a playoff game frames its own series below) and, for upcoming games, the
+  // opponent's current form (cached all-MLB standings). Both fail-soft.
   useEffect(() => {
     setSeasonSeries(null)
     setOppForm(null)
@@ -178,7 +180,7 @@ export default function GameHero() {
     let alive = true
     fetchSeasonFinals().then((finals) => {
       if (!alive) return
-      const vs = finals.filter((f) => f.oppId === oppTeamId)
+      const vs = finals.filter((f) => !f.post && f.oppId === oppTeamId)
       setSeasonSeries({ w: vs.filter((f) => f.me > f.them).length, l: vs.filter((f) => f.me < f.them).length })
     }).catch(() => {})
     if (gameState === 'Preview') fetchTeamContext(oppTeamId).then((c) => { if (alive) setOppForm(c) }).catch(() => {})
@@ -189,6 +191,7 @@ export default function GameHero() {
   if (error || !game) return null
 
   const final = game.status.abstractGameState === 'Final'
+  const post = isPostseason(game)
   const home = game.teams.home.team.id === TEAM_ID
   const me = game.teams[home ? 'home' : 'away']
   const opp = game.teams[home ? 'away' : 'home']
@@ -215,7 +218,10 @@ export default function GameHero() {
   const outsNow = between ? 0 : (ls.outs ?? 0)
   const halfLabel = live && inningNum ? `${topNow ? 'Top' : 'Bottom'} ${ord(inningNum)}` : null
   const inning = halfLabel
-  const series = game.gamesInSeries ? `Game ${game.seriesGameNumber} of ${game.gamesInSeries}` : null
+  // "NLDS Game 2 of 5" in October; "(if necessary)" until MLB flips the flag once the game is needed.
+  const series = game.gamesInSeries
+    ? `${post ? `${roundName(game)} ` : ''}Game ${game.seriesGameNumber} of ${game.gamesInSeries}${game.ifNecessary === 'Y' ? ' (if necessary)' : ''}`
+    : null
   const when = !live && !final
     ? new Date(game.gameDate).toLocaleString('en-US', { weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
     : null
@@ -227,7 +233,7 @@ export default function GameHero() {
     const text = live
       ? `Brewers ${me.score}–${opp.score} ${home ? 'vs' : 'at'} the ${oppName} — live now`
       : final
-      ? `Final: Brewers ${won ? 'beat' : 'fall to'} the ${oppName}, ${won ? `${me.score}–${opp.score}` : `${opp.score}–${me.score}`}`
+      ? `Final: Brewers ${won ? 'beat' : 'fall to'} the ${oppName}, ${won ? `${me.score}–${opp.score}` : `${opp.score}–${me.score}`}${post ? ` in ${postseasonLabel(game)}` : ''}`
       : `Brewers ${home ? 'vs' : 'at'} the ${oppName} — ${when}`
     track('Share', { context: kicker })
     if (navigator.share) {
@@ -296,16 +302,22 @@ export default function GameHero() {
         <TeamBlock team={opp} name={oppName} />
       </div>
 
-      {/* Matchup context: opponent form (upcoming) + season series. Live hero stays lean. */}
+      {/* Matchup context: opponent form (upcoming) + season series — or, in October, where the
+          playoff series stands (streak/last-10 are stale regular-season form by then). Live hero
+          stays lean. */}
       {!live && (() => {
         const oppShort = opp.team.teamName || oppName
         const s = seasonSeries
-        const seriesText = s && (s.w + s.l > 0)
+        const seriesText = post
+          ? postseasonSeries(game)?.text || null
+          : s && (s.w + s.l > 0)
           ? s.w === s.l ? `Season series tied ${s.w}–${s.l}` : `Brewers ${s.w > s.l ? 'lead' : 'trail'} the season series ${s.w}–${s.l}`
           : null
-        const oppText = oppForm
-          ? `The ${oppShort} come in ${oppForm.wins}–${oppForm.losses}${oppForm.divRank ? ` · ${ord(Number(oppForm.divRank))} in their division` : ''}${oppForm.streak ? ` · ${oppForm.streak}` : ''}${oppForm.l10 ? ` · ${oppForm.l10.wins}–${oppForm.l10.losses} last 10` : ''}`
-          : null
+        const divText = oppForm?.divRank ? ` · ${ord(Number(oppForm.divRank))} in their division` : ''
+        const oppText = !oppForm ? null
+          : post
+          ? `The ${oppShort} went ${oppForm.wins}–${oppForm.losses} in the regular season${divText}`
+          : `The ${oppShort} come in ${oppForm.wins}–${oppForm.losses}${divText}${oppForm.streak ? ` · ${oppForm.streak}` : ''}${oppForm.l10 ? ` · ${oppForm.l10.wins}–${oppForm.l10.losses} last 10` : ''}`
         if (!seriesText && !oppText) return null
         return (
           <div style={{ fontFamily: theme.sans, fontSize: 12.5, color: theme.muted, margin: '-6px 0 18px', lineHeight: 1.7 }}>

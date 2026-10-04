@@ -112,7 +112,7 @@ export default function GameFlow() {
     fontFamily: theme.sans, fontSize: 13, color: theme.navy, background: '#fff',
     border: `1px solid ${theme.rule}`, borderLeft: `3px solid ${theme.gold}`, borderRadius: 6, padding: '7px 10px', maxWidth: '100%', cursor: 'pointer',
   }
-  const dateLabel = (g) => `${new Date(g.date + 'T12:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} ${g.home ? 'vs' : '@'} ${g.oppName} (${g.me}-${g.them})`
+  const dateLabel = (g) => `${new Date(g.date + 'T12:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} ${g.home ? 'vs' : '@'} ${g.oppName} (${g.me}-${g.them})${g.label ? ` · ${g.label}` : ''}`
 
   return (
     <div ref={ref}>

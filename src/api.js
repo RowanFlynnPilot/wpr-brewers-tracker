@@ -3,6 +3,7 @@
 // in the browser. Live feeds (standings, schedules, hero) are NOT cached; only the heavy
 // season-wide scans below memoize for a short TTL so flipping between tabs doesn't refetch them.
 import { SEASON, LEAGUE_ID, DIVISION_ID, TEAM_ID, DIVISION, TEAM_NAMES } from './config.js'
+import { isPostseason, isRegularOrPost, isMoot, postseasonLabel } from './games.js'
 
 const BASE = 'https://statsapi.mlb.com/api/v1'
 
@@ -62,10 +63,11 @@ export async function fetchDivisionSchedules() {
   )
 }
 
-// The rest of the season's games (today → season end) for the calendar export. Fetched on demand.
+// The rest of the season's games (today → the World Series, which can spill into November) for
+// the calendar export. Postseason games only appear once the Brewers are in the round. On demand.
 export async function fetchUpcomingSchedule() {
-  const data = await getJSON(`/schedule?sportId=1&teamId=${TEAM_ID}&startDate=${today()}&endDate=${SEASON}-10-01&hydrate=team,venue`)
-  return data.dates.flatMap((d) => d.games)
+  const data = await getJSON(`/schedule?sportId=1&teamId=${TEAM_ID}&startDate=${today()}&endDate=${SEASON}-11-15&hydrate=team,venue`)
+  return data.dates.flatMap((d) => d.games).filter((g) => !isMoot(g))
 }
 
 // Recent + upcoming games for the home team, with probable pitchers hydrated.
@@ -74,7 +76,7 @@ export async function fetchTeamSchedule() {
   const back = new Date(t); back.setDate(t.getDate() - 6)
   const fwd = new Date(t); fwd.setDate(t.getDate() + 10)
   const data = await getJSON(`/schedule?sportId=1&teamId=${TEAM_ID}&startDate=${localDate(back)}&endDate=${localDate(fwd)}&hydrate=probablePitcher,team`)
-  return data.dates.flatMap((day) => day.games.map((g) => ({ date: day.date, game: g })))
+  return data.dates.flatMap((day) => day.games.filter((g) => !isMoot(g)).map((g) => ({ date: day.date, game: g })))
 }
 
 // The single "featured" game for the hero: live now; else a just-finished final (held through
@@ -85,7 +87,7 @@ export async function fetchFeaturedGame() {
   const back = new Date(t); back.setDate(t.getDate() - 1)
   const fwd = new Date(t); fwd.setDate(t.getDate() + 7)
   const data = await getJSON(`/schedule?sportId=1&teamId=${TEAM_ID}&startDate=${localDate(back)}&endDate=${localDate(fwd)}&hydrate=probablePitcher,linescore,team`)
-  const games = data.dates.flatMap((day) => day.games)
+  const games = data.dates.flatMap((day) => day.games).filter((g) => !isMoot(g))
   if (!games.length) return null
   // abstractGameState is 'Live' | 'Preview' | 'Final' — cleaner than detailedState for picking.
   const live = games.find((g) => g.status.abstractGameState === 'Live')
@@ -103,25 +105,26 @@ export async function fetchFeaturedGame() {
 }
 
 // The newsletter "digest" mini needs two games in one shot: the last completed game (with the
-// winning/losing pitcher, via the `decisions` hydrate) and the next scheduled game (probable
-// pitchers). One schedule call over a window around today; the component fetches each pitcher's
-// season line separately (hydrate can't carry those). Fail fast like the rest.
+// winning/losing pitcher, via the `decisions` hydrate; postseason included) and the next scheduled
+// game (probable pitchers). One schedule call over a window around today; the component fetches
+// each pitcher's season line separately (hydrate can't carry those). Fail fast like the rest.
 export async function fetchDigestGames() {
   const t = new Date()
   const back = new Date(t); back.setDate(t.getDate() - 12)
   const fwd = new Date(t); fwd.setDate(t.getDate() + 12)
   const data = await getJSON(`/schedule?sportId=1&teamId=${TEAM_ID}&startDate=${localDate(back)}&endDate=${localDate(fwd)}&hydrate=team,linescore,decisions,probablePitcher`)
-  const games = data.dates.flatMap((d) => d.games)
-  const finals = games.filter((g) => g.gameType === 'R' && g.status.abstractGameState === 'Final' && g.teams.home.score != null && g.teams.away.score != null)
+  const games = data.dates.flatMap((d) => d.games).filter((g) => !isMoot(g))
+  const finals = games.filter((g) => isRegularOrPost(g) && g.status.abstractGameState === 'Final' && g.teams.home.score != null && g.teams.away.score != null)
   const previews = games.filter((g) => g.status.abstractGameState === 'Preview')
   return { last: finals[finals.length - 1] || null, next: previews[0] || null }
 }
 
 // One pitcher's season pitching line (ERA, W-L, K, …). Returns the stat object, or null if the
 // pitcher has no season splits yet. Schedule/hydrate can't carry these, so the hero + schedule
-// cards fetch them per probable pitcher on demand.
-export async function fetchPitcherSeason(personId) {
-  const data = await getJSON(`/people/${personId}/stats?stats=season&season=${SEASON}&group=pitching`)
+// cards fetch them per probable pitcher on demand. `postseason` returns the October line instead
+// (gameType=P) — what a decision in a playoff game should cite.
+export async function fetchPitcherSeason(personId, postseason = false) {
+  const data = await getJSON(`/people/${personId}/stats?stats=season&season=${SEASON}&group=pitching${postseason ? '&gameType=P' : ''}`)
   return data.stats?.[0]?.splits?.[0]?.stat || null
 }
 
@@ -252,8 +255,10 @@ export function fetchLeagueLeaders() {
   })
 }
 
-// Completed regular-season Brewers games, newest first — the stat lab's game picker (cached:
-// every tracker that has a game dropdown shares this one fetch).
+// Completed Brewers games — regular season AND postseason — newest first: the stat lab's game
+// pickers + the bullpen check (cached: every module with a game dropdown shares this one fetch).
+// Postseason games carry `post: true` and a `label` ("NLDS Game 1"); season aggregates (season
+// series, vs-Central, the spray chart) filter them back out with `!g.post`.
 export function fetchSeasonFinals() {
   return cached('finals', 120000, async () => {
     const data = await getJSON(`/schedule?sportId=1&teamId=${TEAM_ID}&startDate=${SEASON}-03-01&endDate=${today()}&hydrate=team`)
@@ -262,7 +267,7 @@ export function fetchSeasonFinals() {
     // gamePk so the played game (with scores) is the one kept.
     const games = data.dates
       .flatMap((d) => d.games)
-      .filter((g) => g.gameType === 'R' && g.status.abstractGameState === 'Final')
+      .filter((g) => isRegularOrPost(g) && g.status.abstractGameState === 'Final')
       .filter((g) => g.teams.home.score != null && g.teams.away.score != null)
       .filter((g) => (seen.has(g.gamePk) ? false : seen.add(g.gamePk)))
       .map((g) => {
@@ -276,6 +281,8 @@ export function fetchSeasonFinals() {
           oppName: opp.teamName || opp.name.replace('Milwaukee ', ''),
           me: g.teams[home ? 'home' : 'away'].score,
           them: g.teams[home ? 'away' : 'home'].score,
+          post: isPostseason(g),
+          label: postseasonLabel(g),
         }
       })
     return games.reverse()
@@ -307,6 +314,18 @@ export function fetchLeagueTable() {
 // One opposing team's current form (record, streak, last 10, division rank) for the hero.
 export function fetchTeamContext(teamId) {
   return fetchLeagueTable().then((m) => m[teamId] || null)
+}
+
+// Is the regular season over? From MLB's own season calendar (regularSeasonEndDate), so the
+// season-pace modules — pulse pace, milestone watch, playoff odds — stand down in October
+// without a hand-maintained date in config. One tiny cached call.
+export function fetchRegularSeasonOver() {
+  return cached('seasonOver', 3600000, async () => {
+    const data = await getJSON(`/seasons/${SEASON}?sportId=1`)
+    const end = data.seasons?.[0]?.regularSeasonEndDate
+    if (!end) throw new Error('regularSeasonEndDate missing')
+    return today() > end
+  })
 }
 
 // Raw play-by-play for one game — cached (a completed game's play-by-play is static, and the
@@ -362,7 +381,8 @@ export function fetchSeasonHomeRuns() {
 // demand and cached by the component. Pooled + failure-tolerant, same pattern as the other scans.
 export function fetchSeasonBattedBalls() {
   return cached('battedBalls', 300000, async () => {
-    const games = await fetchSeasonFinals() // newest-first
+    // Newest-first; regular season only so the chart squares with the hitters' game logs.
+    const games = (await fetchSeasonFinals()).filter((g) => !g.post)
     // Tag each game with its series (consecutive games vs the same opponent at the same venue),
     // so the spray chart can filter by month or by series.
     const meta = {}

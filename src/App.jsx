@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, lazy, Suspense } from 'react'
 import { theme } from './theme.js'
 import { SPONSOR_DISCLAIMER, SPONSORS, WPR_BADGE, WPR_NEWS } from './config.js'
-import { fetchStandingsBundle, fetchDivisionSchedules, fetchRosterStats, fetchLeagueLeaders } from './api.js'
+import { fetchStandingsBundle, fetchDivisionSchedules, fetchRosterStats, fetchLeagueLeaders, fetchRegularSeasonOver } from './api.js'
 import { lastFinalGame } from './games.js'
 import { initAnalytics, track } from './analytics.js'
 import { setupAutoResize } from './autosize.js'
@@ -79,6 +79,8 @@ export default function App() {
   const [ranks, setRanks] = useState(null)
   const [roster, setRoster] = useState(null)
   const [leaders, setLeaders] = useState(null)
+  // null until MLB's season calendar answers; a failed lookup falls back to in-season behavior.
+  const [seasonOver, setSeasonOver] = useState(null)
   const [updatedAt, setUpdatedAt] = useState(null)
   // Per-feed failure flags so a failed FIRST load shows an error state instead of an eternal
   // skeleton. Once a feed has data, later failures keep the prior data (flag cleared on success).
@@ -100,6 +102,7 @@ export default function App() {
     fetchDivisionSchedules().then((s) => { setSchedules(s); flag('schedules', false) }).catch(() => flag('schedules', true))
     fetchRosterStats().then((r) => { setRoster(r); flag('roster', false) }).catch(() => flag('roster', true))
     fetchLeagueLeaders().then(setLeaders).catch(() => {})
+    fetchRegularSeasonOver().then(setSeasonOver).catch(() => setSeasonOver((v) => v ?? false))
   }, [])
 
   useEffect(() => {
@@ -123,7 +126,8 @@ export default function App() {
   }
 
   const lastGame = schedules ? lastFinalGame(schedules) : null
-  const milestones = roster ? milestoneWatch(roster, leaders) : []
+  // Milestones count regular-season stats, so once that season ends none of them can be reached.
+  const milestones = roster && seasonOver === false ? milestoneWatch(roster, leaders) : []
 
   return (
     <div style={{ background: theme.paper, color: theme.ink, minHeight: '100vh' }}>
@@ -140,14 +144,16 @@ export default function App() {
           <>
             <GameHero />
             <MatchupEdge roster={roster} />
-            <Section kicker="Season pulse" title="Where things stand"><Pulse standings={standings} lastGame={lastGame} ranks={ranks} error={errors.standings} /></Section>
+            <Section kicker="Season pulse" title="Where things stand"><Pulse standings={standings} lastGame={lastGame} ranks={ranks} seasonOver={seasonOver} error={errors.standings} /></Section>
             {milestones.length > 0 && <Section kicker="On the verge" title="Milestone watch"><MilestoneWatch items={milestones} /></Section>}
             <Section kicker="NL Central" title="The standings"><Standings standings={standings} schedules={schedules} error={errors.standings} /><VsCentral /></Section>
             {/* sponsor slot renders only when filled (sold, or ?demo) — undefined hides it entirely */}
             <Section kicker="The division race" title="NL Central, day by day" sponsor={SPONSORS.race || undefined} slot="race">
               <Suspense fallback={<Loading block />}><Race schedules={schedules} error={errors.schedules} /></Suspense>
             </Section>
-            <PlayoffOdds />
+            {/* Rest-of-season models — moot once the regular season is over (the hero carries the
+                playoff series then). RoadAhead already empties itself with no games left. */}
+            {seasonOver === false && <PlayoffOdds />}
             <RoadAhead />
           </>
         )}

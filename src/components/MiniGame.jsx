@@ -3,7 +3,7 @@ import { theme } from '../theme.js'
 import { TEAM_ID, TEAM_ACCENT, SPONSORS, headshot } from '../config.js'
 import { fetchFeaturedGame, fetchPitcherSeason, fetchMiniLive, fetchBoxscore } from '../api.js'
 import { fetchFirstPitchForecast } from '../weather.js'
-import { playerOfTheGame, liveMatchupLines } from '../games.js'
+import { playerOfTheGame, liveMatchupLines, postseasonLabel } from '../games.js'
 import { track } from '../analytics.js'
 import { destination } from '../embed.js'
 import TeamLogo from './TeamLogo.jsx'
@@ -185,11 +185,12 @@ export default function MiniGame() {
   const ls = game.linescore || {}
   const isToday = new Date(game.gameDate).toDateString() === new Date().toDateString()
 
-  const kicker = live
+  const round = postseasonLabel(game) // "NLDS Game 2" in October, leads the kicker
+  const kicker = (round ? `${round.toUpperCase()} · ` : '') + (live
     ? `${`${ls.inningHalf || ''} ${ls.currentInningOrdinal || ''}`.trim()}${ls.outs != null ? ` · ${ls.outs} out${ls.outs === 1 ? '' : 's'}` : ''}`.toUpperCase()
     : final
     ? new Date(game.gameDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase()
-    : `${isToday ? 'TONIGHT' : new Date(game.gameDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase()} · ${new Date(game.gameDate).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
+    : `${isToday ? (new Date(game.gameDate).getHours() >= 17 ? 'TONIGHT' : 'TODAY') : new Date(game.gameDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase()} · ${new Date(game.gameDate).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`)
 
   // Countdown chip when first pitch is inside 12 hours.
   const msToStart = state === 'Preview' ? new Date(game.gameDate).getTime() - now : null
