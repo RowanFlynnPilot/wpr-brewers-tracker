@@ -1,0 +1,60 @@
+name: Morning digest bake
+
+# Gets the email image (digest.png) re-baked at a FIXED time before the morning newsletter.
+# GitHub's own `schedule` can't do that: scheduled runs queue behind everyone else's and fired
+# 3–6 hours late in fall 2026 (the morning bake landed anywhere from 5:24 to 8:03 AM Central).
+# A workflow_dispatch, by contrast, starts immediately. So this job is triggered sometime
+# overnight (lateness doesn't matter), SLEEPS until BAKE_AT Central, then dispatches the deploy
+# workflow, which builds + re-bakes digest.png right away. It only times the image bake — it
+# fetches no data and writes nothing (see CLAUDE.md: no data crons).
+
+on:
+  schedule:
+    # Two triggers for redundancy (GitHub can drop scheduled runs under load). Both are after
+    # midnight Central in CDT; in CST the first lands ~11:47 PM, still within the 6-hour job
+    # limit of 5:00 AM. Odd minutes: the top/half of the hour is GitHub's most congested time.
+    - cron: '47 5 * * *'
+    - cron: '17 7 * * *'
+  workflow_dispatch: # manual run = dispatch the bake now (handy for testing)
+
+permissions:
+  actions: write # to dispatch deploy.yml — GITHUB_TOKEN may trigger workflow_dispatch runs
+
+# The newest waiter replaces an older one still sleeping, so one bake fires at BAKE_AT.
+concurrency:
+  group: morning-digest
+  cancel-in-progress: true
+
+env:
+  BAKE_AT: '05:00' # Central — after any West Coast final, well before the ~8 AM send
+
+jobs:
+  bake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    steps:
+      # Manual runs log the target (proves the Central-time math on the runner) but skip the sleep.
+      - name: Wait until ${{ env.BAKE_AT }} Central
+        run: |
+          export TZ=America/Chicago
+          if [ "$(date +%-H)" -ge 23 ]; then
+            # CST: the first trigger lands just before midnight — the bake is tomorrow morning.
+            target=$(date -d "tomorrow $BAKE_AT" +%s)
+          else
+            # In the past if GitHub fired after BAKE_AT → no wait, bake immediately.
+            target=$(date -d "today $BAKE_AT" +%s)
+          fi
+          wait=$(( target - $(date +%s) ))
+          echo "Now $(date '+%F %H:%M %Z') · bake target $(date -d "@$target" '+%F %H:%M %Z')"
+          if [ "${{ github.event_name }}" != schedule ]; then
+            echo "Manual run — dispatching now"
+          elif [ "$wait" -gt 0 ]; then
+            echo "Sleeping $(( wait / 60 )) min"
+            sleep "$wait"
+          else
+            echo "Already past $BAKE_AT Central — baking now"
+          fi
+      - name: Dispatch the deploy (rebuild + re-bake digest.png)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy.yml --repo "${{ github.repository }}" --ref main

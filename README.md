@@ -117,9 +117,9 @@ daily image below instead.
 #### Digest as a daily email image
 
 Email can't run the live widget, so the digest is also published as a static PNG that the deploy
-workflow regenerates **four times a day** (≈1:15 AM and ≈3:45 AM overnight passes for late
-West Coast finals, 6:45 AM & 3:45 PM Central — see `cron` in
-`.github/workflows/deploy.yml`). It's a headless screenshot of `mini-digest.html`
+workflow regenerates **every morning at 5:00 AM Central** — after any late West Coast final,
+timed by `.github/workflows/morning-digest.yml` — plus ≈6:45 AM & 3:45 PM Central backups (see
+`cron` in `.github/workflows/deploy.yml`). It's a headless screenshot of `mini-digest.html`
 (`scripts/render-digest.mjs`), so the image always matches the live card. Drop this into the
 newsletter's HTML (works in every email client) — the image links to the WPR Brewers page:
 
@@ -138,8 +138,9 @@ newsletter's HTML (works in every email client) — the image links to the WPR B
 The image itself is also linked (tapping it opens the tracker), but the text link below makes the
 call-to-action obvious — the image no longer bakes in a "Full tracker" button, since a region
 inside an image can't carry its own link. The PNG is ~840px wide (2× for retina), so it stays
-sharp displayed up to 600px. To change the refresh times, edit the `cron` lines in the workflow (keep them off :00/:30 —
-GitHub delays scheduled runs at the top and half of the hour).
+sharp displayed up to 600px. To move the morning bake, change `BAKE_AT` in `morning-digest.yml` (GitHub's own cron
+fires hours late, so that workflow waits and then triggers the bake on the dot). The other
+refresh times are the `cron` lines in `deploy.yml` (keep them off :00/:30 — GitHub's busiest).
 
 Each mini is its own Plausible page (`/mini-standings.html`, `/mini-strikeouts.html`,
 `/mini-digest.html`); clicks fire a `Mini Click` event tagged with the `widget`

@@ -24,14 +24,19 @@ reliability" — don't. That contradicts the design. The API has 60s cache heade
 built to be hit from browsers. Keeping it client-side is the whole point (simplest path,
 one source of truth, nothing to keep in sync).
 
-TWO sanctioned scheduled jobs exist, and NEITHER is a data cron:
-1. The deploy workflow's `schedule` (4x daily: ~1:15 AM + ~3:45 AM overnight passes for late
-   West Coast finals, ~6:45 AM, ~3:45 PM Central — odd minutes, because GitHub delays/drops
-   top-of-hour schedules) regenerates the **email image** (`digest.png`).
+THREE sanctioned scheduled jobs exist, and NONE is a data cron:
+1. The deploy workflow's `schedule` (~6:45 AM backup + ~3:45 PM Central, ahead of the ~5 PM
+   send — odd minutes, because GitHub delays/drops top-of-hour schedules) regenerates the
+   **email image** (`digest.png`).
    Email clients strip iframes and can't run JS, so the digest is snapshotted to a PNG (headless
    screenshot of `mini-digest.html` via `scripts/render-digest.mjs`). This bakes an *image* for
    email; it does NOT cache the widget's data — the tracker still fetches the API live.
-2. `prospect-check.yml` runs monthly and is NOTIFICATION-ONLY: it compares `TOP_PROSPECTS` with
+2. `morning-digest.yml` times the MORNING bake. GitHub ran scheduled jobs 3–6 h late in Oct
+   2026 (the morning image landed 5:24–8:03 AM), but a `workflow_dispatch` starts at once — so
+   this job is triggered loosely overnight, sleeps until `BAKE_AT` (5:00 AM Central, DST-aware),
+   then dispatches `deploy.yml`. A sleeping runner is deliberate (free on a public repo, under
+   the 6 h job cap) — it's a timer, not a data job. Manual runs skip the sleep and bake now.
+3. `prospect-check.yml` runs monthly and is NOTIFICATION-ONLY: it compares `TOP_PROSPECTS` with
    MLB Pipeline's current list (`scripts/check-prospects.mjs`) and opens a GitHub issue with a
    paste-ready update when they drift. It never writes site data — a human reviews and applies
    the sync.
@@ -155,8 +160,8 @@ Push to `main` → auto-deploys via `.github/workflows/deploy.yml`. Set Pages so
 ## Windows (rpfly machine) reminders
 
 - PowerShell 5.1 chains with `;` not `&&`.
-- If `.github/` or `.gitignore` vanished on unzip, restore from `docs/deploy.yml.txt`
-  and the README.
+- If `.github/` or `.gitignore` vanished on unzip, restore from `docs/deploy.yml.txt`,
+  `docs/morning-digest.yml.txt` and the README.
 - Project path: `C:\Users\rpfly\Projects\wpr-brewers-tracker`.
 
 ## Second external API (deliberate, not drift)
@@ -171,9 +176,10 @@ downloads brand fonts at run time) — rerun it only when branding changes.
 
 `digest.png` (the email-newsletter image) is generated in CI by `scripts/render-digest.mjs`
 (Playwright headless screenshot of `mini-digest.html`) and published to the Pages root. It is
-NOT committed — it's built fresh on every deploy and on the four-times-daily `schedule` in
-`deploy.yml`. The newsletter embeds it as `<img src=".../digest.png">` (snippet in README); the
-live data still comes from the browser, this is just the email-safe rendering of the same card.
+NOT committed — it's built fresh on every deploy, at 5:00 AM Central via `morning-digest.yml`,
+and on the `schedule` in `deploy.yml`. The newsletter embeds it as `<img src=".../digest.png">`
+(snippet in README); the live data still comes from the browser, this is just the email-safe
+rendering of the same card.
 The render **fails loudly rather than bake a degraded card** (the sibling Badgers tracker shipped
 a blank one, 2026-08-16): the script masks the HeadlessChrome fingerprint (UA string + `sec-ch-ua`
 client hint — ESPN/Akamai 403s it; MLB doesn't yet, but this script is the shared template) and

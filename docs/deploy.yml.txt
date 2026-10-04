@@ -10,15 +10,12 @@ on:
     branches: [main]
   workflow_dispatch:
   schedule:
-    # Refresh the email image before the ~8 AM and ~5 PM Central sends, plus two overnight
-    # passes so late West Coast games (final near midnight Central — every NLDS/NLCS road night
-    # in San Diego or LA) reach the image before morning. Cron is UTC and does not follow DST;
-    # during the season (CDT) these land ~1:15 AM / ~3:45 AM / ~6:45 AM / ~3:45 PM Central.
-    # Odd minutes on purpose: GitHub delays (and under load drops) scheduled runs at the top and
-    # half of the hour — in Oct 2026 the old :00/:30 ticks were firing 3–6 hours late, so the
-    # "1 AM" bake was landing after breakfast. Two overnight ticks give the morning send a spare.
-    - cron: '17 6 * * *'
-    - cron: '47 8 * * *'
+    # The MORNING bake is NOT timed here: GitHub fires scheduled runs hours late (3–6 h in
+    # Oct 2026), so morning-digest.yml waits overnight and dispatches this workflow at exactly
+    # 5:00 AM Central — after any West Coast final, before the ~8 AM send. These ticks are a
+    # mid-morning backup and the refresh ahead of the ~5 PM send. Cron is UTC, no DST; in CDT
+    # they land ~6:45 AM / ~3:45 PM Central (often later). Odd minutes on purpose: GitHub's
+    # scheduler is most congested at the top and half of the hour.
     - cron: '43 11 * * *'
     - cron: '43 20 * * *'
 
